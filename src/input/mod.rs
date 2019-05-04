@@ -10,7 +10,7 @@ pub use self::token::*;
 
 pub trait Input: Sized + Debug + PartialEq {
     type Token: Token;
-    type Section: ExactSizeInput;
+    type Section: ExactSizeInput<Token = Self::Token>;
 
     /// Returns whether or not the input is empty.
     fn is_empty(&self) -> bool;
