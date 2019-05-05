@@ -7,7 +7,7 @@ use crate::input::{self, SliceInput, Token};
 pub struct SlicePass<'p, T, E>
 where
     T: Token,
-    E: Error<'p, Self>,
+    E: Error<'p, Pass = Self>,
     E::InputError: input::Error<'p, Token = T>,
 {
     input: SliceInput<'p, T>,
@@ -17,7 +17,7 @@ where
 impl<'p, T, E> Pass<'p> for SlicePass<'p, T, E>
 where
     T: Token,
-    E: Error<'p, Self>,
+    E: Error<'p, Pass = Self>,
     E::InputError: input::Error<'p, Token = T>,
 {
     type Error = E;
@@ -36,7 +36,7 @@ where
 impl<'p, T, E> From<&'p [T]> for SlicePass<'p, T, E>
 where
     T: Token,
-    E: Error<'p, Self>,
+    E: Error<'p, Pass = Self>,
     E::InputError: input::Error<'p, Token = T>,
 {
     fn from(slice: &'p [T]) -> Self {

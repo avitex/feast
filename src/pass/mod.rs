@@ -13,7 +13,7 @@ pub use self::slice::*;
 pub trait Pass<'i>: Sized + Debug + 'i {
     type Input: Input<'i>;
 
-    type Error: Error<'i, Self>;
+    type Error: Error<'i, Pass = Self>;
 
     /// Get the input for this pass.
     fn input<'ii>(&'ii self) -> PassInput<'i, Self>;
@@ -34,7 +34,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
 
     /// Create a pass error based on an input error.
     fn input_error(self, err: PassInputError<'i, Self>) -> Self::Error {
-        <PassError<'i, Self> as Error<'i, Self>>::from_input(self, err)
+        <PassError<'i, Self> as Error<'i>>::from_input(self, err)
     }
 
     /// Create a pass error based on an incomplete input error.
@@ -94,7 +94,7 @@ pub type PassInput<'p, P> = <P as Pass<'p>>::Input;
 pub type PassToken<'p, P> = InputToken<'p, PassInput<'p, P>>;
 pub type PassSection<'p, P> = InputSection<'p, PassInput<'p, P>>;
 pub type PassResult<'p, P, O> = Result<(O, P), PassError<'p, P>>;
-pub type PassInputError<'i, P> = <<P as Pass<'i>>::Error as Error<'i, P>>::InputError;
+pub type PassInputError<'i, P> = <<P as Pass<'i>>::Error as Error<'i>>::InputError;
 
 // pub trait PassWithToken<'p, T>: Pass<'p>
 // where
