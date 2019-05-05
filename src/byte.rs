@@ -1,13 +1,17 @@
 use crate::input::{ExpectedHint, Input, UnexpectedToken};
-use crate::pass::{Pass, PassResult};
+use crate::pass::{self, Pass, PassResult, PassToken};
 
-fn one_if<P, F>(predictate: F, description: &'static str) -> impl Fn(P) -> PassResult<P, P::Token>
+pub fn one_if<P, F>(
+    predictate: F,
+    description: &'static str,
+) -> impl Fn(P) -> PassResult<P, PassToken<P>>
 where
     P: Pass,
-    F: Fn(P::Token) -> Result<P::Token, P::Token>,
+    F: Fn(PassToken<P>) -> Result<PassToken<P>, PassToken<P>>,
 {
     move |pass: P| {
-        let (token, rest) = pass.input().split_first()?;
+        let res = pass.input().split_first();
+        let ((token, rest), pass) = pass.with(res)?;
         match predictate(token) {
             Ok(token) => Ok((token, pass.commit(rest))),
             Err(token) => Err(pass.input_error_unexpected(UnexpectedToken {
@@ -24,7 +28,9 @@ pub fn in_byte_range<P>(
     description: &'static str,
 ) -> impl Fn(P) -> PassResult<P, u8>
 where
-    P: Pass<Token = u8>,
+    P: Pass,
+    P::Error: pass::Error<PassToken<P>>,
+    P::Input: Input<Token = u8>,
 {
     let predictate = move |token| {
         if start <= token && token <= end {
@@ -38,7 +44,9 @@ where
 
 pub fn ascii_digit<P>(pass: P) -> PassResult<P, u8>
 where
-    P: Pass<Token = u8>,
+    P: Pass,
+    P::Error: pass::Error<PassToken<P>>,
+    P::Input: Input<Token = u8>,
 {
     in_byte_range(b'0', b'9', "valid ascii digit")(pass)
 }

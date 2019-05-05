@@ -1,28 +1,32 @@
+use std::marker::PhantomData;
+
+use super::{Error, Pass};
+use crate::input::{SliceInput, Token};
+
 #[derive(Debug, PartialEq)]
-pub struct BasicByteSlicePass<'a> {
-    pub input: SliceInput<'a, u8>,
+pub struct SlicePass<'a, T, E>
+where
+    T: Token,
+    E: Error<T>,
+{
+    input: SliceInput<'a, T>,
+    _err: PhantomData<E>,
 }
 
-impl<'a> Pass for BasicByteSlicePass<'a> {
-    type Token = u8;
-    type Input = SliceInput<'a, Self::Token>;
-
-    type Error = SilentError;
-    type InputError = SilentError;
+impl<'a, T, E> Pass for SlicePass<'a, T, E>
+where
+    T: Token,
+    E: Error<T>,
+{
+    type Error = E;
+    type Input = SliceInput<'a, T>;
 
     fn input(&self) -> Self::Input {
         self.input.clone()
     }
 
-    fn commit(self, rest: Self::Input) -> Self {
-        Self { input: rest }
-    }
-
-    fn input_error(self, _err: Self::InputError) -> Self::Error {
-        SilentError
-    }
-
-    fn input_error_unexpected(self, _unexpected: UnexpectedToken<Self::Token>) -> Self::Error {
-        SilentError
+    fn commit(mut self, rest: Self::Input) -> Self {
+        self.input = rest;
+        self
     }
 }

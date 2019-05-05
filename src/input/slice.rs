@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SliceInput<'a, T: Token>(pub &'a [T]);
 
 impl<'a, T: 'a> SliceInput<'a, T>
@@ -27,7 +27,7 @@ where
 
     fn split_first<E>(self) -> Result<(Self::Token, Self), E>
     where
-        E: Error,
+        E: Error<Self::Token>,
     {
         self.0
             .split_first()
@@ -37,7 +37,7 @@ where
 
     fn split_pair<E, F>(self, pred: F) -> Result<(Self::Section, Self), E>
     where
-        E: Error,
+        E: Error<Self::Token>,
         F: FnMut(&Self::Token) -> bool,
     {
         let mut iter = self.0.splitn(2, pred);
@@ -49,7 +49,7 @@ where
 
     fn split_at<E>(self, mid: usize) -> Result<(Self::Section, Self), E>
     where
-        E: Error,
+        E: Error<Self::Token>,
     {
         if mid > self.len() {
             Err(E::incomplete(CompletionRequirement::Exact(

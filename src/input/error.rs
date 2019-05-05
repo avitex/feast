@@ -1,8 +1,8 @@
 use super::token::Token;
 use failure::Fail;
 
-pub trait Error: Fail {
-    type Token: Token;
+pub trait Error<T: Token>: Fail + PartialEq {
+    //type Token: Token;
 
     /// If the error is fatal, we won't be able to try again.
     fn is_fatal(&self) -> bool;
@@ -13,7 +13,7 @@ pub trait Error: Fail {
     }
 
     /// Create a new unexpected error with details.
-    fn unexpected(unexpected: UnexpectedToken<Self::Token>) -> Self;
+    fn unexpected(unexpected: UnexpectedToken<T>) -> Self;
 
     /// Create a new incomplete error with a requirement.
     fn incomplete(requirement: CompletionRequirement) -> Self;
@@ -48,12 +48,10 @@ pub enum VerboseError<T: Token> {
     Unexpected(UnexpectedToken<T>),
 }
 
-impl<T> Error for VerboseError<T>
+impl<T> Error<T> for VerboseError<T>
 where
     T: Token,
 {
-    type Token = T;
-
     fn is_fatal(&self) -> bool {
         match self {
             VerboseError::Unexpected(_) => true,
@@ -61,7 +59,7 @@ where
         }
     }
 
-    fn unexpected(unexpected: UnexpectedToken<Self::Token>) -> Self {
+    fn unexpected(unexpected: UnexpectedToken<T>) -> Self {
         VerboseError::Unexpected(unexpected)
     }
 
