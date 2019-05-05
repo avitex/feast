@@ -1,5 +1,5 @@
 use crate::input::{ExpectedHint, Input, Token, UnexpectedToken};
-use crate::pass::{Pass, PassInput, PassResult, PassSection, PassToken, PassError};
+use crate::pass::{Pass, PassError, PassInput, PassResult, PassSection, PassToken};
 
 pub fn tag<'p, P, T>(tag: &'p [T]) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
 where

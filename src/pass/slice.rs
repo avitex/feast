@@ -1,20 +1,19 @@
 use std::marker::PhantomData;
 
-use super::{Error, Pass, Context, PassInput};
+use super::{Context, Error, Pass, PassInput};
 use crate::input::{SliceInput, Token};
 
 #[derive(Debug, PartialEq)]
 pub struct SlicePassContext<'p, T>
 where
-    T: Token
+    T: Token,
 {
-    input: SliceInput<'p, T>
+    input: SliceInput<'p, T>,
 }
-
 
 impl<'p, T> Context<'p> for SlicePassContext<'p, T>
 where
-    T: Token
+    T: Token,
 {
     type Input = SliceInput<'p, T>;
 
@@ -27,7 +26,7 @@ where
 pub struct SlicePass<'p, T, E>
 where
     T: Token,
-    E: Error<'p>
+    E: Error<'p>,
 {
     ctx: SlicePassContext<'p, T>,
     _err: PhantomData<E>,
@@ -36,7 +35,7 @@ where
 impl<'p, T, E> Pass<'p> for SlicePass<'p, T, E>
 where
     T: Token,
-    E: Error<'p, Context = SlicePassContext<'p, T>>
+    E: Error<'p, Context = SlicePassContext<'p, T>>,
 {
     type Error = E;
     type Context = SlicePassContext<'p, T>;
@@ -58,12 +57,12 @@ where
 impl<'p, T, E> From<&'p [T]> for SlicePass<'p, T, E>
 where
     T: Token,
-    E: Error<'p, Context = SlicePassContext<'p, T>>
+    E: Error<'p, Context = SlicePassContext<'p, T>>,
 {
     fn from(slice: &'p [T]) -> Self {
         Self {
             ctx: SlicePassContext {
-                input: SliceInput::from(slice)
+                input: SliceInput::from(slice),
             },
             _err: PhantomData::<E>,
         }

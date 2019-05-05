@@ -3,9 +3,7 @@ mod slice;
 
 use std::fmt::Debug;
 
-use crate::input::{
-    self, CompletionRequirement, Input, InputSection, InputToken, UnexpectedToken,
-};
+use crate::input::{self, CompletionRequirement, Input, InputSection, InputToken, UnexpectedToken};
 
 pub use self::error::*;
 pub use self::slice::*;
@@ -54,9 +52,9 @@ pub trait Pass<'i>: Sized + Debug + 'i {
 
     /// Create a pass error based on an incomplete input error.
     fn input_error_incomplete(self, requirement: CompletionRequirement) -> Self::Error {
-        self.input_error(
-            <PassInputError<'i, Self> as input::Error<'i>>::incomplete(requirement),
-        )
+        self.input_error(<PassInputError<'i, Self> as input::Error<'i>>::incomplete(
+            requirement,
+        ))
     }
 
     /// Create a pass error based on an unexpected input error.
@@ -64,9 +62,9 @@ pub trait Pass<'i>: Sized + Debug + 'i {
         self,
         unexpected: UnexpectedToken<'i, PassToken<'i, Self>>,
     ) -> Self::Error {
-        self.input_error(
-            <PassInputError<'i, Self> as input::Error<'i>>::unexpected(unexpected),
-        )
+        self.input_error(<PassInputError<'i, Self> as input::Error<'i>>::unexpected(
+            unexpected,
+        ))
     }
 
     /// Returns whether or not the input is empty.
