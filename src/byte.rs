@@ -1,5 +1,5 @@
 use crate::input::{ExpectedHint, Input, UnexpectedToken};
-use crate::pass::{self, Pass, PassResult, PassToken};
+use crate::pass::{Pass, PassInput, PassResult, PassToken};
 
 pub fn one_if<P, F>(
     predictate: F,
@@ -28,8 +28,7 @@ pub fn in_byte_range<P>(
 ) -> impl Fn(P) -> PassResult<P, u8>
 where
     P: Pass,
-    P::Error: pass::Error<PassToken<P>>,
-    P::Input: Input<Token = u8>,
+    PassInput<P>: Input<Token = u8>,
 {
     let predictate = move |token| {
         if start <= token && token <= end {
@@ -44,31 +43,30 @@ where
 pub fn ascii_digit<P>(pass: P) -> PassResult<P, u8>
 where
     P: Pass,
-    P::Error: pass::Error<PassToken<P>>,
-    P::Input: Input<Token = u8>,
+    PassInput<P>: Input<Token = u8>,
 {
     in_byte_range(b'0', b'9', "valid ascii digit")(pass)
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::pass::BasicByteSlicePass;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pass::{SlicePass, SlicePassContext, VerboseError};
 
-//     fn test_pass(input: &'static [u8]) -> impl Pass<Token = u8> {
-//         BasicByteSlicePass {
-//             input: input.into(),
-//         }
-//     }
+    type TestPass = SlicePass<'static, u8, VerboseError<SlicePassContext<'static, u8>>>;
 
-//     fn empty_pass() -> impl Pass<Token = u8> {
-//         test_pass(b"")
-//     }
+    fn test_pass(input: &'static [u8]) -> TestPass {
+        TestPass::from(input)
+    }
 
-//     #[test]
-//     fn valid_ascii_digit() {
-//         let pass = test_pass(b"1");
+    fn empty_pass() -> TestPass {
+        test_pass(b"")
+    }
 
-//         assert_eq!(ascii_digit(pass), Ok((b'1', empty_pass())));
-//     }
-// }
+    #[test]
+    fn valid_ascii_digit() {
+        let pass = test_pass(b"1");
+
+        assert_eq!(ascii_digit(pass), Ok((b'1', empty_pass())));
+    }
+}

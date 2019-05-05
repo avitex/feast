@@ -1,26 +1,38 @@
-mod slice;
 mod error;
+mod slice;
 
 use std::fmt::Debug;
 
-use crate::input::{self, CompletionRequirement, Input, InputToken, UnexpectedToken};
+use crate::input::{self, CompletionRequirement, Input, InputToken, Token, UnexpectedToken};
 
-pub use self::slice::*;
 pub use self::error::*;
+pub use self::slice::*;
 
-pub trait Pass: Sized + Debug + PartialEq {
+pub trait Context: Sized + Sync + Send + Debug + PartialEq {
     type Input: Input;
 
-    type Error: Error<InputToken<Self::Input>>;
+    fn input(&self) -> Self::Input;
+}
+
+pub trait Pass: Sized + Debug {
+    type Context: Context;
+
+    type Error: Error<Self::Context>;
 
     // Follow a sub pass with a different input.
     // fn sub<I: Input>(&self, input: I) -> Self;
 
+    fn context(&self) -> &Self::Context;
+
+    fn into_context(self) -> Self::Context;
+
     /// Get the input for this pass.
-    fn input(&self) -> Self::Input;
+    fn input(&self) -> PassInput<Self> {
+        self.context().input()
+    }
 
     /// Commit the remaining input to be used, consuming the changes.
-    fn commit(self, rest: Self::Input) -> Self;
+    fn commit(self, rest: PassInput<Self>) -> Self;
 
     /// With input result, mapping the error for a pass.
     fn with<O>(input_result: Result<O, PassInputError<Self>>, pass: Self) -> PassResult<Self, O> {
@@ -32,7 +44,7 @@ pub trait Pass: Sized + Debug + PartialEq {
 
     /// Create a pass error based on an input error.
     fn input_error(self, err: PassInputError<Self>) -> Self::Error {
-        <Self::Error as Error<PassToken<Self>>>::from_input(self, err)
+        <PassError<Self> as Error<PassContext<Self>>>::from_input(self.into_context(), err)
     }
 
     /// Create a pass error based on an incomplete input error.
@@ -50,8 +62,25 @@ pub trait Pass: Sized + Debug + PartialEq {
     }
 }
 
+pub type PassContext<P> = <P as Pass>::Context;
 pub type PassError<P> = <P as Pass>::Error;
-pub type PassInput<P> = <P as Pass>::Input;
-pub type PassToken<P> = InputToken<<P as Pass>::Input>;
+pub type PassInput<P> = <PassContext<P> as Context>::Input;
+pub type ContextToken<C> = InputToken<<C as Context>::Input>;
+pub type PassToken<P> = InputToken<PassInput<P>>;
 pub type PassResult<P, O> = Result<(O, P), PassError<P>>;
-pub type PassInputError<P> = <<P as Pass>::Error as Error<PassToken<P>>>::InputError;
+pub type PassInputError<P> = <<P as Pass>::Error as Error<PassContext<P>>>::InputError;
+
+pub trait PassWithToken<T>: Pass
+where
+    T: Token,
+    PassInput<Self>: Input<Token = T>,
+{
+}
+
+impl<P, T> PassWithToken<T> for P
+where
+    T: Token,
+    P: Pass,
+    PassInput<P>: Input<Token = T>,
+{
+}
