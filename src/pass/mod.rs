@@ -23,10 +23,10 @@ pub trait Pass: Sized + Debug + PartialEq {
     fn commit(self, rest: Self::Input) -> Self;
 
     /// With input result, mapping the error for a pass.
-    fn with<O>(self, input_result: Result<O, PassInputError<Self>>) -> PassResult<Self, O> {
+    fn with<O>(input_result: Result<O, PassInputError<Self>>, pass: Self) -> PassResult<Self, O> {
         match input_result {
-            Ok(out) => Ok((out, self)),
-            Err(err) => Err(self.input_error(err)),
+            Ok(out) => Ok((out, pass)),
+            Err(err) => Err(pass.input_error(err)),
         }
     }
 
