@@ -22,19 +22,19 @@ pub trait Input<'i>: Sized + Debug {
     /// Splits the first token from the input.
     fn split_first<E>(self) -> Result<(Self::Token, Self), E>
     where
-        E: Error<'i, Self::Token>;
+        E: Error<'i, Token = Self::Token>;
 
     /// Splits an input in two, based on a predictate.
     /// Will fail if cannot split into a pair.
     fn split_pair<E, F>(self, pred: F) -> Result<(Self::Section, Self), E>
     where
-        E: Error<'i, Self::Token>,
+        E: Error<'i, Token = Self::Token>,
         F: FnMut(&Self::Token) -> bool;
 
     /// Splits an input in two, from an exact size.
     fn split_at<E>(self, mid: usize) -> Result<(Self::Section, Self), E>
     where
-        E: Error<'i, Self::Token>;
+        E: Error<'i, Token = Self::Token>;
 }
 
 pub trait ExactSizeInput<'i>: Input<'i> + Index<usize, Output = InputToken<'i, Self>> {

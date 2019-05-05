@@ -2,8 +2,8 @@ use super::token::Token;
 
 use std::fmt::Debug;
 
-pub trait Error<'a, T: Token>: Debug + PartialEq {
-    //type Token: Token;
+pub trait Error<'a>: Debug + PartialEq {
+    type Token: Token;
 
     /// If the error is fatal, we won't be able to try again.
     fn is_fatal(&self) -> bool;
@@ -14,7 +14,7 @@ pub trait Error<'a, T: Token>: Debug + PartialEq {
     }
 
     /// Create a new unexpected error with details.
-    fn unexpected(unexpected: UnexpectedToken<'a, T>) -> Self;
+    fn unexpected(unexpected: UnexpectedToken<'a, Self::Token>) -> Self;
 
     /// Create a new incomplete error with a requirement.
     fn incomplete(requirement: CompletionRequirement) -> Self;
@@ -48,10 +48,12 @@ pub enum VerboseError<'a, T: Token> {
     Unexpected(UnexpectedToken<'a, T>),
 }
 
-impl<'a, T> Error<'a, T> for VerboseError<'a, T>
+impl<'a, T> Error<'a> for VerboseError<'a, T>
 where
     T: Token,
 {
+    type Token = T;
+
     fn is_fatal(&self) -> bool {
         match self {
             VerboseError::Unexpected(_) => true,
@@ -59,7 +61,7 @@ where
         }
     }
 
-    fn unexpected(unexpected: UnexpectedToken<'a, T>) -> Self {
+    fn unexpected(unexpected: UnexpectedToken<'a, Self::Token>) -> Self {
         VerboseError::Unexpected::<'a>(unexpected)
     }
 

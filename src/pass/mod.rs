@@ -40,7 +40,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     /// Create a pass error based on an incomplete input error.
     fn input_error_incomplete(self, requirement: CompletionRequirement) -> Self::Error {
         self.input_error(
-            <PassInputError<'i, Self> as input::Error<PassToken<'i, Self>>>::incomplete(requirement),
+            <PassInputError<'i, Self> as input::Error<'i>>::incomplete(requirement),
         )
     }
 
@@ -50,7 +50,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
         unexpected: UnexpectedToken<'i, PassToken<'i, Self>>,
     ) -> Self::Error {
         self.input_error(
-            <PassInputError<'i, Self> as input::Error<'i, PassToken<'i, Self>>>::unexpected(unexpected),
+            <PassInputError<'i, Self> as input::Error<'i>>::unexpected(unexpected),
         )
     }
 
@@ -63,7 +63,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     /// Splits the first token from the input.
     #[inline]
     fn split_first(self) -> PassResult<'i, Self, (PassToken<'i, Self>, PassInput<'i, Self>)> {
-        Self::with(self.input().split_first(), self)
+        <Self as Pass<'i>>::with(self.input().split_first(), self)
     }
 
     /// Splits an input in two, based on a predictate.
@@ -76,7 +76,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     where
         F: FnMut(&PassToken<'i, Self>) -> bool,
     {
-        Self::with(self.input().split_pair(pred), self)
+        <Self as Pass<'i>>::with(self.input().split_pair(pred), self)
     }
 
     /// Splits an input in two, from an exact size.
@@ -84,9 +84,8 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     fn split_at<E>(
         self,
         mid: usize,
-    ) -> PassResult<'i, Self, (PassSection<'i, Self>, PassInput<'i, Self>)>
-    {
-        Self::with(self.input().split_at(mid), self)
+    ) -> PassResult<'i, Self, (PassSection<'i, Self>, PassInput<'i, Self>)> {
+        <Self as Pass<'i>>::with(self.input().split_at(mid), self)
     }
 }
 

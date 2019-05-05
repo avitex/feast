@@ -4,7 +4,7 @@ use crate::input;
 use std::fmt::Debug;
 
 pub trait Error<'p, P: Pass<'p>>: Debug + 'p {
-    type InputError: input::Error<'p, PassToken<'p, P>>;
+    type InputError: input::Error<'p, Token = PassToken<'p, P>>;
 
     // Create pass error from input error.
     fn from_input(pass: P, err: Self::InputError) -> Self;
