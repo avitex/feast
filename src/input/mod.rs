@@ -39,3 +39,4 @@ pub trait ExactSizeInput: Input {
 }
 
 pub type InputToken<I> = <I as Input>::Token;
+pub type InputSection<I> = <I as Input>::Section;

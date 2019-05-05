@@ -3,7 +3,9 @@ mod slice;
 
 use std::fmt::Debug;
 
-use crate::input::{self, CompletionRequirement, Input, InputToken, Token, UnexpectedToken};
+use crate::input::{
+    self, CompletionRequirement, Input, InputSection, InputToken, Token, UnexpectedToken,
+};
 
 pub use self::error::*;
 pub use self::slice::*;
@@ -60,6 +62,34 @@ pub trait Pass: Sized + Debug {
             <PassInputError<Self> as input::Error<PassToken<Self>>>::unexpected(unexpected),
         )
     }
+
+    /// Returns whether or not the input is empty.
+    #[inline]
+    fn input_is_empty(&self) -> bool {
+        self.input().is_empty()
+    }
+
+    /// Splits the first token from the input.
+    #[inline]
+    fn split_first(self) -> PassResult<Self, (PassToken<Self>, PassInput<Self>)> {
+        Self::with(self.input().split_first(), self)
+    }
+
+    /// Splits an input in two, based on a predictate.
+    /// Will fail if cannot split into a pair.
+    #[inline]
+    fn split_pair<E, F>(self, pred: F) -> PassResult<Self, (PassSection<Self>, PassInput<Self>)>
+    where
+        F: FnMut(&PassToken<Self>) -> bool,
+    {
+        Self::with(self.input().split_pair(pred), self)
+    }
+
+    /// Splits an input in two, from an exact size.
+    #[inline]
+    fn split_at<E>(self, mid: usize) -> PassResult<Self, (PassSection<Self>, PassInput<Self>)> {
+        Self::with(self.input().split_at(mid), self)
+    }
 }
 
 pub type PassContext<P> = <P as Pass>::Context;
@@ -67,6 +97,7 @@ pub type PassError<P> = <P as Pass>::Error;
 pub type PassInput<P> = <PassContext<P> as Context>::Input;
 pub type ContextToken<C> = InputToken<<C as Context>::Input>;
 pub type PassToken<P> = InputToken<PassInput<P>>;
+pub type PassSection<P> = InputSection<PassInput<P>>;
 pub type PassResult<P, O> = Result<(O, P), PassError<P>>;
 pub type PassInputError<P> = <<P as Pass>::Error as Error<PassContext<P>>>::InputError;
 

@@ -10,7 +10,7 @@ where
     F: Fn(PassToken<P>) -> Result<PassToken<P>, PassToken<P>>,
 {
     move |pass: P| {
-        let ((token, rest), pass) = P::with(pass.input().split_first(), pass)?;
+        let ((token, rest), pass) = pass.split_first()?;
         match predictate(token) {
             Ok(token) => Ok((token, pass.commit(rest))),
             Err(token) => Err(pass.input_error_unexpected(UnexpectedToken {
