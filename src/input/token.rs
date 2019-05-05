@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-pub trait Token: Debug + Sync + Send + Clone + IntoBytes + Eq + PartialOrd + 'static {
+pub trait Token: Debug + Clone + IntoBytes + Eq + PartialOrd {
     fn is_ascii(&self) -> bool;
 }
 

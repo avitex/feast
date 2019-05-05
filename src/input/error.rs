@@ -1,7 +1,8 @@
 use super::token::Token;
-use failure::Fail;
 
-pub trait Error<T: Token>: Fail + PartialEq {
+use std::fmt::Debug;
+
+pub trait Error<'a, T: Token>: Debug + PartialEq {
     //type Token: Token;
 
     /// If the error is fatal, we won't be able to try again.
@@ -13,25 +14,25 @@ pub trait Error<T: Token>: Fail + PartialEq {
     }
 
     /// Create a new unexpected error with details.
-    fn unexpected(unexpected: UnexpectedToken<T>) -> Self;
+    fn unexpected(unexpected: UnexpectedToken<'a, T>) -> Self;
 
     /// Create a new incomplete error with a requirement.
     fn incomplete(requirement: CompletionRequirement) -> Self;
 }
 
 #[derive(Debug, PartialEq)]
-pub struct UnexpectedToken<T: Token> {
+pub struct UnexpectedToken<'a, T: Token> {
     pub unexpected: T,
-    pub expecting: ExpectedHint<T>,
+    pub expecting: ExpectedHint<'a, T>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ExpectedHint<T: Token> {
+pub enum ExpectedHint<'a, T: Token> {
     None,
-    Tag(&'static [T]),
+    Tag(&'a [T]),
     Token(T),
-    Description(&'static str),
-    OneOf(&'static [ExpectedHint<T>]),
+    Description(&'a str),
+    OneOf(&'a [ExpectedHint<'a, T>]),
 }
 
 #[derive(Debug, PartialEq)]
@@ -41,15 +42,13 @@ pub enum CompletionRequirement {
     Unknown,
 }
 
-#[derive(Fail, Debug, PartialEq)]
-pub enum VerboseError<T: Token> {
-    #[fail(display = "incomplete input")]
+#[derive(Debug, PartialEq)]
+pub enum VerboseError<'a, T: Token> {
     Incomplete(CompletionRequirement),
-    #[fail(display = "unexpected token")]
-    Unexpected(UnexpectedToken<T>),
+    Unexpected(UnexpectedToken<'a, T>),
 }
 
-impl<T> Error<T> for VerboseError<T>
+impl<'a, T> Error<'a, T> for VerboseError<'a, T>
 where
     T: Token,
 {
@@ -60,8 +59,8 @@ where
         }
     }
 
-    fn unexpected(unexpected: UnexpectedToken<T>) -> Self {
-        VerboseError::Unexpected(unexpected)
+    fn unexpected(unexpected: UnexpectedToken<'a, T>) -> Self {
+        VerboseError::Unexpected::<'a>(unexpected)
     }
 
     fn incomplete(requirement: CompletionRequirement) -> Self {

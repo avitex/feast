@@ -1,32 +1,31 @@
-use failure::Fail;
-
-use super::{Context, ContextToken};
+use super::{Pass, PassToken};
 use crate::input;
 
-pub trait Error<C: Context>: Fail + PartialEq {
-    type InputError: input::Error<ContextToken<C>>;
+use std::fmt::Debug;
+
+pub trait Error<'p, P: Pass<'p>>: Debug + 'p {
+    type InputError: input::Error<'p, PassToken<'p, P>>;
 
     // Create pass error from input error.
-    fn from_input(ctx: C, err: Self::InputError) -> Self;
+    fn from_input(pass: P, err: Self::InputError) -> Self;
 }
 
-impl<C> Error<C> for VerboseError<C>
+impl<'p, P> Error<'p, P> for VerboseError<'p, P>
 where
-    C: Context + 'static,
+    P: Pass<'p> + 'p,
 {
-    type InputError = input::VerboseError<ContextToken<C>>;
+    type InputError = input::VerboseError<'p, PassToken<'p, P>>;
 
-    fn from_input(ctx: C, err: Self::InputError) -> Self {
-        VerboseError { ctx, input: err }
+    fn from_input(pass: P, err: Self::InputError) -> Self {
+        VerboseError { pass, input: err }
     }
 }
 
-#[derive(Fail, Debug, PartialEq)]
-#[fail(display = "verbose error")]
-pub struct VerboseError<C>
+#[derive(Debug, PartialEq)]
+pub struct VerboseError<'p, P>
 where
-    C: Context + 'static,
+    P: Pass<'p>,
 {
-    ctx: C,
-    input: input::VerboseError<ContextToken<C>>,
+    pass: P,
+    input: input::VerboseError<'p, PassToken<'p, P>>,
 }

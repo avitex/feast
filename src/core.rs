@@ -1,15 +1,15 @@
 use crate::input::{ExpectedHint, Input, Token, UnexpectedToken};
-use crate::pass::{Pass, PassError, PassInput, PassResult, PassSection, PassToken};
+use crate::pass::{Pass, PassInput, PassResult, PassSection, PassToken, PassError};
 
-pub fn tag<P, T>(tag: &'static [T]) -> impl Fn(P) -> PassResult<P, PassSection<P>>
+pub fn tag<'p, P, T>(tag: &'p [T]) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
 where
-    P: Pass,
+    P: Pass<'p>,
     T: Token,
-    PassInput<P>: Input<Token = T>,
+    PassInput<'p, P>: Input<'p, Token = T>,
 {
     move |pass: P| {
         let tag_len = tag.len();
-        let ((input_tag, rest), pass) = pass.split_at::<PassError<P>>(tag_len)?;
+        let ((input_tag, rest), pass) = pass.split_at::<PassError<'p, P>>(tag_len)?;
         for i in 0..tag_len {
             if tag[i] == input_tag[i] {
                 continue;
@@ -24,13 +24,13 @@ where
     }
 }
 
-pub fn one_if<P, F>(
+pub fn one_if<'p, P, F>(
     predictate: F,
     description: &'static str,
-) -> impl Fn(P) -> PassResult<P, PassToken<P>>
+) -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
 where
-    P: Pass,
-    F: Fn(PassToken<P>) -> Result<PassToken<P>, PassToken<P>>,
+    P: Pass<'p>,
+    F: Fn(PassToken<'p, P>) -> Result<PassToken<'p, P>, PassToken<'p, P>>,
 {
     move |pass: P| {
         let ((token, rest), pass) = pass.split_first()?;
@@ -44,11 +44,11 @@ where
     }
 }
 
-pub fn token<P, T>(token: T, description: &'static str) -> impl Fn(P) -> PassResult<P, T>
+pub fn token<'p, P, T>(token: T, description: &'static str) -> impl Fn(P) -> PassResult<'p, P, T>
 where
-    P: Pass,
-    T: Token,
-    PassInput<P>: Input<Token = T>,
+    P: Pass<'p>,
+    T: Token + 'p,
+    PassInput<'p, P>: Input<'p, Token = T>,
 {
     let predictate = move |input_token| {
         if token == input_token {
@@ -60,11 +60,15 @@ where
     one_if(predictate, description)
 }
 
-pub fn in_range<P, T>(start: T, end: T, description: &'static str) -> impl Fn(P) -> PassResult<P, T>
+pub fn in_range<'p, P, T>(
+    start: T,
+    end: T,
+    description: &'static str,
+) -> impl Fn(P) -> PassResult<'p, P, T>
 where
-    P: Pass,
-    T: Token,
-    PassInput<P>: Input<Token = T>,
+    P: Pass<'p>,
+    T: Token + 'p,
+    PassInput<'p, P>: Input<'p, Token = T>,
 {
     let predictate = move |token| {
         if start <= token && token <= end {

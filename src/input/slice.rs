@@ -3,20 +3,20 @@ use super::*;
 use std::ops::Index;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct SliceInput<'a, T: Token>(pub &'a [T]);
+pub struct SliceInput<'i, T: Token>(pub &'i [T]);
 
-impl<'a, T: 'a> SliceInput<'a, T>
+impl<'i, T: 'i> SliceInput<'i, T>
 where
     T: Token,
 {
-    const EMPTY_INPUT: &'a [T] = &[];
+    const EMPTY_INPUT: &'i [T] = &[];
 
     pub fn empty() -> Self {
         Self(Self::EMPTY_INPUT)
     }
 }
 
-impl<'a, T> Input for SliceInput<'a, T>
+impl<'i, T> Input<'i> for SliceInput<'i, T>
 where
     T: Token,
 {
@@ -29,7 +29,7 @@ where
 
     fn split_first<E>(self) -> Result<(Self::Token, Self), E>
     where
-        E: Error<Self::Token>,
+        E: Error<'i, Self::Token>,
     {
         self.0
             .split_first()
@@ -39,7 +39,7 @@ where
 
     fn split_pair<E, F>(self, pred: F) -> Result<(Self::Section, Self), E>
     where
-        E: Error<Self::Token>,
+        E: Error<'i, Self::Token>,
         F: FnMut(&Self::Token) -> bool,
     {
         let mut iter = self.0.splitn(2, pred);
@@ -51,7 +51,7 @@ where
 
     fn split_at<E>(self, mid: usize) -> Result<(Self::Section, Self), E>
     where
-        E: Error<Self::Token>,
+        E: Error<'i, Self::Token>,
     {
         if mid > self.len() {
             Err(E::incomplete(CompletionRequirement::Exact(
@@ -64,7 +64,7 @@ where
     }
 }
 
-impl<'a, T> ExactSizeInput for SliceInput<'a, T>
+impl<'i, T> ExactSizeInput<'i> for SliceInput<'i, T>
 where
     T: Token,
 {
@@ -73,7 +73,7 @@ where
     }
 }
 
-impl<'a, T> Index<usize> for SliceInput<'a, T>
+impl<'i, T> Index<usize> for SliceInput<'i, T>
 where
     T: Token,
 {
@@ -84,7 +84,7 @@ where
     }
 }
 
-impl<'a, T> AsRef<[T]> for SliceInput<'a, T>
+impl<'i, T> AsRef<[T]> for SliceInput<'i, T>
 where
     T: Token,
 {
@@ -93,11 +93,11 @@ where
     }
 }
 
-impl<'a, T> From<&'a [T]> for SliceInput<'a, T>
+impl<'i, T> From<&'i [T]> for SliceInput<'i, T>
 where
     T: Token,
 {
-    fn from(slice: &'a [T]) -> Self {
+    fn from(slice: &'i [T]) -> Self {
         Self(slice)
     }
 }
@@ -107,7 +107,7 @@ mod tests {
     use super::*;
 
     type MockToken = u8;
-    type MockError = VerboseError<MockToken>;
+    type MockError = VerboseError<'static, MockToken>;
 
     const MOCK_DATA: &[u8] = b"hello:world";
 
