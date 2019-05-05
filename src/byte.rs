@@ -11,27 +11,27 @@ where
     in_range(b'0', b'9', "valid ascii digit")(pass)
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::pass::{SlicePass, VerboseError};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pass::{SlicePass, SlicePassContext, VerboseError};
 
-//     type TestPassImpl<P> = SlicePass<'static, u8, VerboseError<SlicePass>>
-    
-//     type TestPass<P> = SlicePass<'static, u8, VerboseError<SlicePass>>;
+    type TestContext = SlicePassContext<'static, u8>;
+    type TestError = VerboseError<'static, TestContext>;
+    type TestPass = SlicePass<'static, u8, TestError>;
 
-//     fn test_pass(input: &'static [u8]) -> TestPass {
-//         TestPass::from(input)
-//     }
+    fn test_pass(input: &'static [u8]) -> TestPass {
+        TestPass::from(input)
+    }
 
-//     fn empty_pass() -> TestPass {
-//         test_pass(b"")
-//     }
+    fn empty_pass() -> TestPass {
+        test_pass(b"")
+    }
 
-//     #[test]
-//     fn valid_ascii_digit() {
-//         let pass = test_pass(b"1");
+    #[test]
+    fn valid_ascii_digit() {
+        let pass = test_pass(b"1");
 
-//         assert_eq!(ascii_digit(pass), Ok((b'1', empty_pass())));
-//     }
-// }
+        assert_eq!(ascii_digit(pass), Ok((b'1', empty_pass())));
+    }
+}

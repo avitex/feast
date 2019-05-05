@@ -10,16 +10,31 @@ use crate::input::{
 pub use self::error::*;
 pub use self::slice::*;
 
-pub trait Pass<'i>: Sized + Debug + 'i {
+pub trait Context<'i>: Sized + Debug + 'i {
     type Input: Input<'i>;
 
-    type Error: Error<'i, Pass = Self>;
+    fn input(&self) -> Self::Input;
+}
 
-    /// Get the input for this pass.
-    fn input<'ii>(&'ii self) -> PassInput<'i, Self>;
+type ContextInput<'i, C> = <C as Context<'i>>::Input;
+type ContextToken<'i, C> = InputToken<'i, ContextInput<'i, C>>;
+
+pub trait Pass<'i>: Sized + Debug + 'i {
+    type Context: Context<'i>;
+
+    type Error: Error<'i, Context = Self::Context>;
+
+    fn context(&self) -> &Self::Context;
+
+    fn into_context(self) -> Self::Context;
 
     /// Commit the remaining input to be used, consuming the changes.
     fn commit(self, rest: PassInput<'i, Self>) -> Self;
+
+    /// Get the input for this pass.
+    fn input<'ii>(&'ii self) -> PassInput<'i, Self> {
+        self.context().input()
+    }
 
     /// With input result, mapping the error for a pass.
     fn with<O>(
@@ -34,7 +49,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
 
     /// Create a pass error based on an input error.
     fn input_error(self, err: PassInputError<'i, Self>) -> Self::Error {
-        <PassError<'i, Self> as Error<'i>>::from_input(self, err)
+        <PassError<'i, Self> as Error<'i>>::from_input(self.into_context(), err)
     }
 
     /// Create a pass error based on an incomplete input error.
@@ -90,7 +105,8 @@ pub trait Pass<'i>: Sized + Debug + 'i {
 }
 
 pub type PassError<'p, P> = <P as Pass<'p>>::Error;
-pub type PassInput<'p, P> = <P as Pass<'p>>::Input;
+pub type PassContext<'p, P> = <P as Pass<'p>>::Context;
+pub type PassInput<'p, P> = <PassContext<'p, P> as Context<'p>>::Input;
 pub type PassToken<'p, P> = InputToken<'p, PassInput<'p, P>>;
 pub type PassSection<'p, P> = InputSection<'p, PassInput<'p, P>>;
 pub type PassResult<'p, P, O> = Result<(O, P), PassError<'p, P>>;
