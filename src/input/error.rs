@@ -28,6 +28,7 @@ pub struct UnexpectedToken<T: Token> {
 #[derive(Debug, PartialEq)]
 pub enum ExpectedHint<T: Token> {
     None,
+    Tag(&'static [T]),
     Token(T),
     Description(&'static str),
     OneOf(&'static [ExpectedHint<T>]),

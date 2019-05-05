@@ -1,5 +1,7 @@
 use super::*;
 
+use std::ops::Index;
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SliceInput<'a, T: Token>(pub &'a [T]);
 
@@ -68,6 +70,17 @@ where
 {
     fn len(&self) -> usize {
         self.0.len()
+    }
+}
+
+impl<'a, T> Index<usize> for SliceInput<'a, T>
+where
+    T: Token,
+{
+    type Output = T;
+
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.0[idx]
     }
 }
 

@@ -3,6 +3,7 @@ mod slice;
 mod token;
 
 use std::fmt::Debug;
+use std::ops::Index;
 
 pub use self::error::*;
 pub use self::slice::*;
@@ -33,7 +34,7 @@ pub trait Input: Sized + Debug + PartialEq {
         E: Error<Self::Token>;
 }
 
-pub trait ExactSizeInput: Input {
+pub trait ExactSizeInput: Input + Index<usize, Output = InputToken<Self>> {
     /// Returns the length of the input.
     fn len(&self) -> usize;
 }
