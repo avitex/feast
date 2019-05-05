@@ -1,10 +1,11 @@
-mod basic;
+mod slice;
 mod error;
 
 use std::fmt::Debug;
 
 use crate::input::{self, CompletionRequirement, Input, InputToken, UnexpectedToken};
 
+pub use self::slice::*;
 pub use self::error::*;
 
 pub trait Pass: Sized + Debug + PartialEq {
