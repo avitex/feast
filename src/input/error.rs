@@ -1,4 +1,4 @@
-use super::token::Token;
+use super::token::{Token, TokenTag};
 
 use std::fmt::Debug;
 
@@ -14,58 +14,65 @@ pub trait Error<'a>: Debug + PartialEq {
     }
 
     /// Create a new unexpected error with details.
-    fn unexpected(unexpected: UnexpectedToken<'a, Self::Token>) -> Self;
+    fn unexpected(unexpected: Unexpected<'a, Self::Token>) -> Self;
 
     /// Create a new incomplete error with a requirement.
-    fn incomplete(requirement: CompletionRequirement) -> Self;
+    fn incomplete(requirement: Requirement) -> Self;
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct UnexpectedToken<'a, T: Token> {
-    pub unexpected: T,
-    pub expecting: ExpectedHint<'a, T>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum ExpectedHint<'a, T: Token> {
-    None,
-    Tag(&'a [T]),
-    Token(T),
-    Description(&'a str),
-    OneOf(&'a [ExpectedHint<'a, T>]),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum CompletionRequirement {
-    Exact(usize),
-    Between(usize, usize),
-    Unknown,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum VerboseError<'a, T: Token> {
-    Incomplete(CompletionRequirement),
-    Unexpected(UnexpectedToken<'a, T>),
-}
-
-impl<'a, T> Error<'a> for VerboseError<'a, T>
+impl<'a, T> Error<'a> for ErrorReason<'a, T>
 where
     T: Token,
 {
     type Token = T;
 
     fn is_fatal(&self) -> bool {
+        self.is_fatal()
+    }
+
+    fn unexpected(unexpected: Unexpected<'a, Self::Token>) -> Self {
+        ErrorReason::Unexpected(unexpected)
+    }
+
+    /// Create a new incomplete error with a requirement.
+    fn incomplete(requirement: Requirement) -> Self {
+        ErrorReason::Incomplete(requirement)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ErrorReason<'a, T: Token> {
+    Incomplete(Requirement),
+    Unexpected(Unexpected<'a, T>),
+}
+
+impl<'a, T: Token> ErrorReason<'a, T> {
+    pub fn is_fatal(&self) -> bool {
         match self {
-            VerboseError::Unexpected(_) => true,
-            VerboseError::Incomplete(_) => false,
+            ErrorReason::Incomplete(_) => false,
+            _ => true,
         }
     }
+}
 
-    fn unexpected(unexpected: UnexpectedToken<'a, Self::Token>) -> Self {
-        VerboseError::Unexpected::<'a>(unexpected)
-    }
+#[derive(Clone, Debug, PartialEq)]
+pub struct Unexpected<'a, T: Token> {
+    pub unexpected: TokenTag<'a, T>,
+    pub expecting: ExpectedHint<'a, T>,
+}
 
-    fn incomplete(requirement: CompletionRequirement) -> Self {
-        VerboseError::Incomplete(requirement)
-    }
+#[derive(Clone, Debug, PartialEq)]
+pub enum ExpectedHint<'a, T: Token> {
+    None,
+    Token(T),
+    Tag(&'a [T]),
+    Description(&'a str),
+    OneOf(&'a [ExpectedHint<'a, T>]),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Requirement {
+    Exact(usize),
+    Between(usize, usize),
+    Unknown,
 }

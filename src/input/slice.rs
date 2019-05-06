@@ -34,7 +34,7 @@ where
         self.0
             .split_first()
             .map(|(token, rest)| (token.clone(), Self(rest)))
-            .ok_or_else(|| E::incomplete(CompletionRequirement::Exact(1)))
+            .ok_or_else(|| E::incomplete(Requirement::Exact(1)))
     }
 
     fn split_pair<E, F>(self, pred: F) -> Result<(Self::Section, Self), E>
@@ -45,7 +45,7 @@ where
         let mut iter = self.0.splitn(2, pred);
         match (iter.next(), iter.next()) {
             (Some(consumed), Some(rest)) => Ok((Self(consumed), Self(rest))),
-            _ => Err(E::incomplete(CompletionRequirement::Unknown)),
+            _ => Err(E::incomplete(Requirement::Unknown)),
         }
     }
 
@@ -54,7 +54,7 @@ where
         E: Error<'i, Token = Self::Token>,
     {
         if mid > self.len() {
-            Err(E::incomplete(CompletionRequirement::Exact(
+            Err(E::incomplete(Requirement::Exact(
                 mid - self.len(),
             )))
         } else {
@@ -107,7 +107,7 @@ mod tests {
     use super::*;
 
     type MockToken = u8;
-    type MockError = VerboseError<'static, MockToken>;
+    type MockError = ErrorReason<'static, MockToken>;
 
     const MOCK_DATA: &[u8] = b"hello:world";
 
@@ -132,7 +132,7 @@ mod tests {
 
         assert_eq!(
             empty_slice_input().split_first::<MockError>(),
-            Err(VerboseError::Incomplete(CompletionRequirement::Exact(1)))
+            Err(ErrorReason::Incomplete(Requirement::Exact(1)))
         );
     }
 
@@ -150,7 +150,7 @@ mod tests {
 
         assert_eq!(
             mock_slice_input().split_at::<MockError>(MOCK_DATA.len() + 1),
-            Err(VerboseError::Incomplete(CompletionRequirement::Exact(1)))
+            Err(ErrorReason::Incomplete(Requirement::Exact(1)))
         );
     }
 
@@ -173,7 +173,7 @@ mod tests {
 
         assert_eq!(
             mock_slice_input().split_pair::<MockError, _>(|t| *t == b'?'),
-            Err(VerboseError::Incomplete(CompletionRequirement::Unknown))
+            Err(ErrorReason::Incomplete(Requirement::Unknown))
         );
     }
 }

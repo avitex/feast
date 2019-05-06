@@ -1,4 +1,4 @@
-use crate::input::{ExpectedHint, Input, Token, UnexpectedToken};
+use crate::input::{ExpectedHint, Input, Token, Unexpected, TokenTag};
 use crate::pass::{Pass, PassError, PassInput, PassResult, PassSection, PassToken};
 
 pub fn hint<'p, P, F, O>(inner: F, _description: &'static str) -> impl Fn(P) -> PassResult<'p, P, O>
@@ -27,8 +27,8 @@ where
             if tag[i] == input_tag[i] {
                 continue;
             } else {
-                return pass.with_input_error_unexpected(UnexpectedToken {
-                    unexpected: input_tag[i].clone(),
+                return pass.with_input_error_unexpected(Unexpected {
+                    unexpected: TokenTag::Token(input_tag[i].clone()),
                     expecting: ExpectedHint::Tag(tag),
                 });
             }
@@ -46,8 +46,8 @@ where
         let ((token, rest), pass) = pass.split_first()?;
         match predictate(token) {
             Ok(token) => Ok((token, pass.commit(rest))),
-            Err(token) => pass.with_input_error_unexpected(UnexpectedToken {
-                unexpected: token,
+            Err(token) => pass.with_input_error_unexpected(Unexpected {
+                unexpected: TokenTag::Token(token),
                 expecting: ExpectedHint::None,
             }),
         }

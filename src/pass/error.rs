@@ -16,7 +16,7 @@ pub struct VerboseError<'i, C>
 where
     C: Context<'i>,
 {
-    input: input::VerboseError<'i, ContextToken<'i, C>>,
+    input: input::ErrorReason<'i, ContextToken<'i, C>>,
 }
 
 impl<'i, C> Error<'i> for VerboseError<'i, C>
@@ -24,7 +24,7 @@ where
     C: Context<'i>,
 {
     type Context = C;
-    type InputError = input::VerboseError<'i, ContextToken<'i, C>>;
+    type InputError = input::ErrorReason<'i, ContextToken<'i, C>>;
 
     fn from_input(_ctx: &Self::Context, err: Self::InputError) -> Self {
         VerboseError { input: err }
