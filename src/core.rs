@@ -80,18 +80,16 @@ where
     one_if(predictate, description)
 }
 
-pub fn peek<'p, P, F, O>(
-    inner: F,
-) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn peek<'p, P, F, O>(inner: F) -> impl Fn(P) -> PassResult<'p, P, O>
 where
     P: Pass<'p>,
-    F: Fn(P) -> PassResult<'p, P, O>
+    F: Fn(P) -> PassResult<'p, P, O>,
 {
     move |pass: P| {
         let input = pass.input();
         match inner(pass) {
             Ok((out, pass)) => Ok((out, pass.commit(input))),
-            err => err
+            err => err,
         }
     }
 }
@@ -101,6 +99,8 @@ mod tests {
     use super::*;
     use crate::byte::*;
     use crate::pass::{SlicePass, SlicePassContext, VerboseError};
+
+    use assert_matches::assert_matches;
 
     type TestContext = SlicePassContext<'static, u8>;
     type TestError = VerboseError<'static, TestContext>;
@@ -117,16 +117,27 @@ mod tests {
     #[test]
     fn test_peek_simple() {
         let pass = test_pass(b"1");
-    
-        assert_eq!(peek(ascii_digit)(pass.clone()), Ok((b'1', pass)));
+
+        assert_matches!(
+            peek(ascii_digit)(pass.clone()),
+            Ok((b'1', pass_out)) => {
+                assert_eq!(pass_out, pass);
+            }
+        );
     }
 
     #[test]
     fn test_peek_tag() {
-        let input = &b"hello"[..];
-        let pass = test_pass(input);
-        let input_tag = tag(input);
-    
-        assert_eq!(peek(input_tag)(pass.clone()), Ok((input.into(), pass)));
+        let raw = &b"hello"[..];
+        let pass = test_pass(raw);
+        let input_tag = tag(raw);
+
+        assert_matches!(
+            peek(input_tag)(pass.clone()),
+            Ok((input_out, pass_out)) => {
+                assert_eq!(input_out, raw.into());
+                assert_eq!(pass_out, pass);
+            }
+        );
     }
 }

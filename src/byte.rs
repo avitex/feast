@@ -16,6 +16,8 @@ mod tests {
     use super::*;
     use crate::pass::{SlicePass, SlicePassContext, VerboseError};
 
+    use assert_matches::assert_matches;
+
     type TestContext = SlicePassContext<'static, u8>;
     type TestError = VerboseError<'static, TestContext>;
     type TestPass = SlicePass<'static, u8, TestError>;
@@ -32,6 +34,11 @@ mod tests {
     fn test_valid_ascii_digit() {
         let pass = test_pass(b"1");
 
-        assert_eq!(ascii_digit(pass), Ok((b'1', empty_pass())));
+        assert_matches!(
+            ascii_digit(pass),
+            Ok((b'1', pass_out)) => {
+                assert_eq!(pass_out, empty_pass())
+            }
+        );
     }
 }
