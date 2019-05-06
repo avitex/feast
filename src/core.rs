@@ -117,7 +117,16 @@ mod tests {
     #[test]
     fn test_peek_simple() {
         let pass = test_pass(b"1");
-
+    
         assert_eq!(peek(ascii_digit)(pass.clone()), Ok((b'1', pass)));
+    }
+
+    #[test]
+    fn test_peek_tag() {
+        let input = &b"hello"[..];
+        let pass = test_pass(input);
+        let input_tag = tag(input);
+    
+        assert_eq!(peek(input_tag)(pass.clone()), Ok((input.into(), pass)));
     }
 }
