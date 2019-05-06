@@ -1,6 +1,22 @@
 use crate::input::{ExpectedHint, Input, Token, UnexpectedToken};
 use crate::pass::{Pass, PassError, PassInput, PassResult, PassSection, PassToken};
 
+pub fn hint<'p, P, F, O>(
+    inner: F,
+    _description: &'static str,
+) -> impl Fn(P) -> PassResult<'p, P, O>
+where
+    P: Pass<'p>,
+    F: Fn(P) -> PassResult<'p, P, O>
+{
+    move |pass: P| {
+        match inner(pass) {
+            Err((err, pass)) => Err((err, pass)), // TODO: Wrap with hint description
+            ok => ok
+        }
+    }
+}
+
 pub fn tag<'p, P, T>(tag: &'p [T]) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
 where
     P: Pass<'p>,
@@ -14,10 +30,10 @@ where
             if tag[i] == input_tag[i] {
                 continue;
             } else {
-                return Err(pass.input_error_unexpected(UnexpectedToken {
+                return pass.with_input_error_unexpected(UnexpectedToken {
                     unexpected: input_tag[i].clone(),
                     expecting: ExpectedHint::Tag(tag),
-                }));
+                });
             }
         }
         Ok((input_tag, pass.commit(rest)))
@@ -25,8 +41,7 @@ where
 }
 
 pub fn one_if<'p, P, F>(
-    predictate: F,
-    description: &'static str,
+    predictate: F
 ) -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
 where
     P: Pass<'p>,
@@ -36,15 +51,15 @@ where
         let ((token, rest), pass) = pass.split_first()?;
         match predictate(token) {
             Ok(token) => Ok((token, pass.commit(rest))),
-            Err(token) => Err(pass.input_error_unexpected(UnexpectedToken {
+            Err(token) => pass.with_input_error_unexpected(UnexpectedToken {
                 unexpected: token,
-                expecting: ExpectedHint::Description(description),
-            })),
+                expecting: ExpectedHint::None,
+            }),
         }
     }
 }
 
-pub fn token<'p, P, T>(token: T, description: &'static str) -> impl Fn(P) -> PassResult<'p, P, T>
+pub fn token<'p, P, T>(token: T) -> impl Fn(P) -> PassResult<'p, P, T>
 where
     P: Pass<'p>,
     T: Token + 'p,
@@ -57,13 +72,12 @@ where
             Err(input_token)
         }
     };
-    one_if(predictate, description)
+    one_if(predictate)
 }
 
 pub fn in_range<'p, P, T>(
     start: T,
-    end: T,
-    description: &'static str,
+    end: T
 ) -> impl Fn(P) -> PassResult<'p, P, T>
 where
     P: Pass<'p>,
@@ -77,7 +91,7 @@ where
             Err(token)
         }
     };
-    one_if(predictate, description)
+    one_if(predictate)
 }
 
 pub fn peek<'p, P, F, O>(inner: F) -> impl Fn(P) -> PassResult<'p, P, O>
@@ -94,10 +108,30 @@ where
     }
 }
 
+pub fn or<'p, P, A, B, O>(a: A, b: B) -> impl Fn(P) -> PassResult<'p, P, O>
+where
+    P: Pass<'p>,
+    A: Fn(P) -> PassResult<'p, P, O>,
+    B: Fn(P) -> PassResult<'p, P, O>,
+{
+    move |pass: P| {
+        match a(pass) {
+            Err((_err_a, pass)) => match b(pass) {
+                Err((err_b, pass)) => {
+                    // TODO: Better or error
+                    Err((err_b, pass))
+                },
+                ok => ok
+            },
+            ok => ok
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::byte::*;
+    use crate::ascii::*;
     use crate::pass::{SlicePass, SlicePassContext, VerboseError};
 
     use assert_matches::assert_matches;

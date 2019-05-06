@@ -35,34 +35,43 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     }
 
     /// With input result, mapping the error for a pass.
-    fn with<O>(
+    fn with_error<O>(
+        self,
+        err: PassError<'i, Self>,
+    ) -> PassResult<'i, Self, O> {
+        Err((err, self))
+    }
+
+    /// With input result, mapping the error for a pass.
+    fn with_input_result<O>(
+        self,
         input_result: Result<O, PassInputError<'i, Self>>,
-        pass: Self,
     ) -> PassResult<'i, Self, O> {
         match input_result {
-            Ok(out) => Ok((out, pass)),
-            Err(err) => Err(pass.input_error(err)),
+            Ok(out) => Ok((out, self)),
+            Err(err) => self.with_input_error(err),
         }
     }
 
     /// Create a pass error based on an input error.
-    fn input_error(self, err: PassInputError<'i, Self>) -> Self::Error {
-        <PassError<'i, Self> as Error<'i>>::from_input(self.into_context(), err)
+    fn with_input_error<O>(self, err: PassInputError<'i, Self>) -> PassResult<'i, Self, O> {
+        let err = <PassError<'i, Self> as Error<'i>>::from_input(self.context(), err);
+        self.with_error(err)
     }
 
     /// Create a pass error based on an incomplete input error.
-    fn input_error_incomplete(self, requirement: CompletionRequirement) -> Self::Error {
-        self.input_error(<PassInputError<'i, Self> as input::Error<'i>>::incomplete(
+    fn with_input_error_incomplete<O>(self, requirement: CompletionRequirement) -> PassResult<'i, Self, O> {
+        self.with_input_error(<PassInputError<'i, Self> as input::Error<'i>>::incomplete(
             requirement,
         ))
     }
 
     /// Create a pass error based on an unexpected input error.
-    fn input_error_unexpected(
+    fn with_input_error_unexpected<O>(
         self,
         unexpected: UnexpectedToken<'i, PassToken<'i, Self>>,
-    ) -> Self::Error {
-        self.input_error(<PassInputError<'i, Self> as input::Error<'i>>::unexpected(
+    ) -> PassResult<'i, Self, O> {
+        self.with_input_error(<PassInputError<'i, Self> as input::Error<'i>>::unexpected(
             unexpected,
         ))
     }
@@ -76,7 +85,8 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     /// Splits the first token from the input.
     #[inline]
     fn split_first(self) -> PassResult<'i, Self, (PassToken<'i, Self>, PassInput<'i, Self>)> {
-        <Self as Pass<'i>>::with(self.input().split_first(), self)
+        let res = self.input().split_first();
+        self.with_input_result(res)
     }
 
     /// Splits an input in two, based on a predictate.
@@ -89,7 +99,8 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     where
         F: FnMut(&PassToken<'i, Self>) -> bool,
     {
-        <Self as Pass<'i>>::with(self.input().split_pair(pred), self)
+        let res = self.input().split_pair(pred);
+        self.with_input_result(res)
     }
 
     /// Splits an input in two, from an exact size.
@@ -98,7 +109,8 @@ pub trait Pass<'i>: Sized + Debug + 'i {
         self,
         mid: usize,
     ) -> PassResult<'i, Self, (PassSection<'i, Self>, PassInput<'i, Self>)> {
-        <Self as Pass<'i>>::with(self.input().split_at(mid), self)
+        let res = self.input().split_at(mid);
+        self.with_input_result(res)
     }
 }
 
@@ -107,7 +119,7 @@ pub type PassContext<'p, P> = <P as Pass<'p>>::Context;
 pub type PassInput<'p, P> = <PassContext<'p, P> as Context<'p>>::Input;
 pub type PassToken<'p, P> = InputToken<'p, PassInput<'p, P>>;
 pub type PassSection<'p, P> = InputSection<'p, PassInput<'p, P>>;
-pub type PassResult<'p, P, O> = Result<(O, P), PassError<'p, P>>;
+pub type PassResult<'p, P, O> = Result<(O, P), (PassError<'p, P>, P)>;
 pub type PassInputError<'i, P> = <<P as Pass<'i>>::Error as Error<'i>>::InputError;
 
 // pub trait PassWithToken<'p, T>: Pass<'p>
