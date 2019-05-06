@@ -1,18 +1,15 @@
 use crate::input::{ExpectedHint, Input, Token, UnexpectedToken};
 use crate::pass::{Pass, PassError, PassInput, PassResult, PassSection, PassToken};
 
-pub fn hint<'p, P, F, O>(
-    inner: F,
-    _description: &'static str,
-) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn hint<'p, P, F, O>(inner: F, _description: &'static str) -> impl Fn(P) -> PassResult<'p, P, O>
 where
     P: Pass<'p>,
-    F: Fn(P) -> PassResult<'p, P, O>
+    F: Fn(P) -> PassResult<'p, P, O>,
 {
     move |pass: P| {
         match inner(pass) {
             Err((err, pass)) => Err((err, pass)), // TODO: Wrap with hint description
-            ok => ok
+            ok => ok,
         }
     }
 }
@@ -40,9 +37,7 @@ where
     }
 }
 
-pub fn one_if<'p, P, F>(
-    predictate: F
-) -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
+pub fn take_one_if<'p, P, F>(predictate: F) -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
 where
     P: Pass<'p>,
     F: Fn(PassToken<'p, P>) -> Result<PassToken<'p, P>, PassToken<'p, P>>,
@@ -72,13 +67,30 @@ where
             Err(input_token)
         }
     };
-    one_if(predictate)
+    take_one_if(predictate)
 }
 
-pub fn in_range<'p, P, T>(
-    start: T,
-    end: T
-) -> impl Fn(P) -> PassResult<'p, P, T>
+pub fn take_one<'p, P>() -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
+where
+    P: Pass<'p>,
+{
+    move |pass: P| {
+        let ((token, rest), pass) = pass.split_first()?;
+        Ok((token, pass.commit(rest)))
+    }
+}
+
+pub fn take<'p, P>(n: usize) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
+where
+    P: Pass<'p>,
+{
+    move |pass: P| {
+        let ((taken, rest), pass) = pass.split_at::<PassError<'p, P>>(n)?;
+        Ok((taken, pass.commit(rest)))
+    }
+}
+
+pub fn in_range<'p, P, T>(start: T, end: T) -> impl Fn(P) -> PassResult<'p, P, T>
 where
     P: Pass<'p>,
     T: Token + 'p,
@@ -91,21 +103,7 @@ where
             Err(token)
         }
     };
-    one_if(predictate)
-}
-
-pub fn peek<'p, P, F, O>(inner: F) -> impl Fn(P) -> PassResult<'p, P, O>
-where
-    P: Pass<'p>,
-    F: Fn(P) -> PassResult<'p, P, O>,
-{
-    move |pass: P| {
-        let input = pass.input();
-        match inner(pass) {
-            Ok((out, pass)) => Ok((out, pass.commit(input))),
-            err => err,
-        }
-    }
+    take_one_if(predictate)
 }
 
 pub fn or<'p, P, A, B, O>(a: A, b: B) -> impl Fn(P) -> PassResult<'p, P, O>
@@ -120,10 +118,24 @@ where
                 Err((err_b, pass)) => {
                     // TODO: Better or error
                     Err((err_b, pass))
-                },
-                ok => ok
+                }
+                ok => ok,
             },
-            ok => ok
+            ok => ok,
+        }
+    }
+}
+
+pub fn peek<'p, P, F, O>(inner: F) -> impl Fn(P) -> PassResult<'p, P, O>
+where
+    P: Pass<'p>,
+    F: Fn(P) -> PassResult<'p, P, O>,
+{
+    move |pass: P| {
+        let input = pass.input();
+        match inner(pass) {
+            Ok((out, pass)) => Ok((out, pass.commit(input))),
+            err => err,
         }
     }
 }

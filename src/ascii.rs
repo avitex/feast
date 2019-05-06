@@ -24,7 +24,10 @@ where
     P: Pass<'p>,
     PassInput<'p, P>: Input<'p, Token = u8>,
 {
-    hint(or(ascii_alpha_lower, ascii_alpha_upper), "valid ascii alpha")(pass)
+    hint(
+        or(ascii_alpha_lower, ascii_alpha_upper),
+        "valid ascii alpha",
+    )(pass)
 }
 
 pub fn ascii_alphanum<'p, P>(pass: P) -> PassResult<'p, P, u8>

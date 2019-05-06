@@ -35,10 +35,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     }
 
     /// With input result, mapping the error for a pass.
-    fn with_error<O>(
-        self,
-        err: PassError<'i, Self>,
-    ) -> PassResult<'i, Self, O> {
+    fn with_error<O>(self, err: PassError<'i, Self>) -> PassResult<'i, Self, O> {
         Err((err, self))
     }
 
@@ -60,7 +57,10 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     }
 
     /// Create a pass error based on an incomplete input error.
-    fn with_input_error_incomplete<O>(self, requirement: CompletionRequirement) -> PassResult<'i, Self, O> {
+    fn with_input_error_incomplete<O>(
+        self,
+        requirement: CompletionRequirement,
+    ) -> PassResult<'i, Self, O> {
         self.with_input_error(<PassInputError<'i, Self> as input::Error<'i>>::incomplete(
             requirement,
         ))
