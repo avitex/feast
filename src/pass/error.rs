@@ -11,7 +11,7 @@ pub trait Error<'i>: Debug + 'i {
     fn from_input(ctx: Self::Context, err: Self::InputError) -> Self;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct VerboseError<'i, C>
 where
     C: Context<'i>,

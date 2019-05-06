@@ -20,13 +20,13 @@ pub trait Error<'a>: Debug + PartialEq {
     fn incomplete(requirement: CompletionRequirement) -> Self;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UnexpectedToken<'a, T: Token> {
     pub unexpected: T,
     pub expecting: ExpectedHint<'a, T>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ExpectedHint<'a, T: Token> {
     None,
     Tag(&'a [T]),
@@ -35,14 +35,14 @@ pub enum ExpectedHint<'a, T: Token> {
     OneOf(&'a [ExpectedHint<'a, T>]),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CompletionRequirement {
     Exact(usize),
     Between(usize, usize),
     Unknown,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum VerboseError<'a, T: Token> {
     Incomplete(CompletionRequirement),
     Unexpected(UnexpectedToken<'a, T>),

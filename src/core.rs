@@ -79,3 +79,45 @@ where
     };
     one_if(predictate, description)
 }
+
+pub fn peek<'p, P, F, O>(
+    inner: F,
+) -> impl Fn(P) -> PassResult<'p, P, O>
+where
+    P: Pass<'p>,
+    F: Fn(P) -> PassResult<'p, P, O>
+{
+    move |pass: P| {
+        let input = pass.input();
+        match inner(pass) {
+            Ok((out, pass)) => Ok((out, pass.commit(input))),
+            err => err
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::byte::*;
+    use crate::pass::{SlicePass, SlicePassContext, VerboseError};
+
+    type TestContext = SlicePassContext<'static, u8>;
+    type TestError = VerboseError<'static, TestContext>;
+    type TestPass = SlicePass<'static, u8, TestError>;
+
+    fn test_pass(input: &'static [u8]) -> TestPass {
+        TestPass::from(input)
+    }
+
+    // fn empty_pass() -> TestPass {
+    //     test_pass(b"")
+    // }
+
+    #[test]
+    fn test_peek_simple() {
+        let pass = test_pass(b"1");
+
+        assert_eq!(peek(ascii_digit)(pass.clone()), Ok((b'1', pass)));
+    }
+}

@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use super::{Context, Error, Pass, PassInput};
 use crate::input::{SliceInput, Token};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SlicePassContext<'p, T>
 where
     T: Token,
@@ -22,7 +22,7 @@ where
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SlicePass<'p, T, E>
 where
     T: Token,
