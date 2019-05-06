@@ -29,7 +29,7 @@ mod tests {
     }
 
     #[test]
-    fn valid_ascii_digit() {
+    fn test_valid_ascii_digit() {
         let pass = test_pass(b"1");
 
         assert_eq!(ascii_digit(pass), Ok((b'1', empty_pass())));
