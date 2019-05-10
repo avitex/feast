@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use super::Capture;
 
 pub trait IntoBytes {
     type Bytes: AsRef<[u8]>;
@@ -9,6 +10,27 @@ pub trait IntoBytes {
 pub trait Token: Sized + Debug + Clone + IntoBytes + Eq {
     fn byte_size() -> Option<usize>;
     fn is_ascii(&self) -> bool;
+}
+
+
+impl<T> Capture for T
+where 
+    T: Token
+{
+    type Value = Self;
+
+    /// Tokens are always complete.
+    fn is_complete(&self) -> bool {
+        true
+    }
+
+    fn resolve(&mut self) {
+        ()
+    }
+
+    fn into_value(self) -> Self::Value {
+        self
+    }
 }
 
 impl Token for u8 {

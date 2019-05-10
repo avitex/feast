@@ -58,6 +58,26 @@ pub trait ExactSizeInput<'i>: Input<'i> + Index<usize, Output = InputToken<'i, S
     fn len(&self) -> usize;
 }
 
+// TODO: Reconsider this?
+// impl<'i, I> Capture for I
+// where 
+//     I: ExactSizeInput<'i>
+// {
+//     type Value = Self;
+
+//     fn is_complete(&self) -> bool {
+//         true
+//     }
+
+//     fn resolve(&mut self) {
+//         ()
+//     }
+
+//     fn into_value(self) -> Self::Value {
+//         self
+//     }
+// }
+
 /// Helper to reference an Input's `Token` type.
 pub type InputToken<'i, I> = <I as Input<'i>>::Token;
 
