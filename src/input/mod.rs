@@ -1,6 +1,7 @@
 mod error;
 mod slice;
 mod token;
+mod capture;
 
 use std::fmt::Debug;
 use std::ops::Index;
@@ -8,13 +9,29 @@ use std::ops::Index;
 pub use self::error::*;
 pub use self::slice::*;
 pub use self::token::*;
+pub use self::capture::*;
+
+pub trait InputMarker: Iterator {
+    type Mark;
+    type Token: Token;
+
+    fn skip(&mut self, n: usize) -> bool;
+
+    fn peek(&self) -> Option<Self::Token>;
+    
+    fn child(&self) -> Self;
+
+    fn mark(&self) -> Self::Mark;
+}
 
 pub trait Input<'i>: Sized + Debug {
+    type Mark;
     /// The smallest unit of data the input provides.
-    type Token: Token + 'i;
-
+    type Token: Token;
     /// A section, or sequence of tokens from the input.
     type Section: ExactSizeInput<'i, Token = Self::Token>;
+
+    type Marker: InputMarker<Mark = Self::Mark, Token = Self::Token> + Iterator<Item = Self::Token>;
 
     /// Returns whether or not the input is empty.
     fn is_empty(&self) -> bool;
@@ -24,17 +41,16 @@ pub trait Input<'i>: Sized + Debug {
     where
         E: Error<'i, Token = Self::Token>;
 
-    /// Splits an input in two, based on a predictate.
-    /// Will fail if cannot split into a pair.
-    fn split_pair<E, F>(self, pred: F) -> Result<(Self::Section, Self), E>
-    where
-        E: Error<'i, Token = Self::Token>,
-        F: FnMut(&Self::Token) -> bool;
-
     /// Splits an input in two, from an exact size.
     fn split_at<E>(self, mid: usize) -> Result<(Self::Section, Self), E>
     where
         E: Error<'i, Token = Self::Token>;
+
+    fn split_mark<E>(self, mark: Self::Mark) -> Result<(Self::Section, Self), E>
+    where
+        E: Error<'i, Token = Self::Token>;
+
+    fn marker(&self) -> Self::Marker;
 }
 
 pub trait ExactSizeInput<'i>: Input<'i> + Index<usize, Output = InputToken<'i, Self>> {

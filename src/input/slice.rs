@@ -20,8 +20,10 @@ impl<'i, T> Input<'i> for SliceInput<'i, T>
 where
     T: Token,
 {
+    type Mark = usize;
     type Token = T;
     type Section = Self;
+    type Marker = SliceMarker<'i, T>;
 
     fn is_empty(&self) -> bool {
         self.0.is_empty()
@@ -37,18 +39,6 @@ where
             .ok_or_else(|| E::incomplete(Requirement::Exact(1)))
     }
 
-    fn split_pair<E, F>(self, pred: F) -> Result<(Self::Section, Self), E>
-    where
-        E: Error<'i, Token = Self::Token>,
-        F: FnMut(&Self::Token) -> bool,
-    {
-        let mut iter = self.0.splitn(2, pred);
-        match (iter.next(), iter.next()) {
-            (Some(consumed), Some(rest)) => Ok((Self(consumed), Self(rest))),
-            _ => Err(E::incomplete(Requirement::Unknown)),
-        }
-    }
-
     fn split_at<E>(self, mid: usize) -> Result<(Self::Section, Self), E>
     where
         E: Error<'i, Token = Self::Token>,
@@ -61,6 +51,17 @@ where
             let (consumed, rest) = self.0.split_at(mid);
             Ok((Self(consumed), Self(rest)))
         }
+    }
+
+    fn split_mark<E>(self, mark: Self::Mark) -> Result<(Self::Section, Self), E>
+    where
+        E: Error<'i, Token = Self::Token> 
+    {
+        self.split_at(mark)
+    }
+
+    fn marker(&self) -> Self::Marker {
+        SliceMarker::from(self.0)
     }
 }
 
@@ -99,6 +100,92 @@ where
 {
     fn from(slice: &'i [T]) -> Self {
         Self(slice)
+    }
+}
+
+pub struct SliceMarker<'a, T: Token> {
+    cursor: usize,
+    items: &'a [T],
+}
+
+impl<'a, T> SliceMarker<'a, T>
+where
+    T: Token,
+{
+    pub fn at_end(&self) -> bool {
+        self.len() == 0
+    }
+}
+
+
+impl<'a, T> InputMarker for SliceMarker<'a, T>
+where
+    T: Token,
+{
+    type Mark = usize;
+    type Token = T;
+
+    fn skip(&mut self, n: usize) -> bool {
+        if self.len() > n {
+            self.cursor += n;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn peek(&self) -> Option<Self::Token> {
+        if self.at_end() {
+            None
+        } else {
+            Some(self.items[self.cursor].clone())
+        }
+    }
+
+    fn child(&self) -> Self {
+        Self::from(&self.items[self.cursor..])
+    }
+
+    fn mark(&self) -> Self::Mark {
+        self.cursor
+    }
+}
+
+impl<'a, T> Iterator for SliceMarker<'a, T>
+where
+    T: Token,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.at_end() {
+            None
+        } else {
+           let next = self.items[self.cursor].clone();
+            self.cursor += 1;
+            Some(next)
+        }
+    }
+}
+
+impl<'a, T> ExactSizeIterator for SliceMarker<'a, T>
+where
+    T: Token,
+{
+    fn len(&self) -> usize {
+        self.items.len() - self.cursor
+    }
+}
+
+impl<'i, T> From<&'i [T]> for SliceMarker<'i, T>
+where
+    T: Token,
+{
+    fn from(items: &'i [T]) -> Self {
+        Self {
+            cursor: 0,
+            items,
+        }
     }
 }
 
@@ -155,25 +242,33 @@ mod tests {
     }
 
     #[test]
-    fn test_slice_input_split_pair() {
+    fn test_slice_input_marker() {
         assert_eq!(
-            mock_slice_input().split_pair::<MockError, _>(|t| *t == b':'),
-            Ok((slice_input(b"hello"), slice_input(b"world")))
-        );
-
-        assert_eq!(
-            mock_slice_input().split_pair::<MockError, _>(|t| *t == b'd'),
-            Ok((slice_input(b"hello:worl"), empty_slice_input()))
-        );
-
-        assert_eq!(
-            mock_slice_input().split_pair::<MockError, _>(|t| *t == b'h'),
-            Ok((empty_slice_input(), slice_input(b"ello:world")))
-        );
-
-        assert_eq!(
-            mock_slice_input().split_pair::<MockError, _>(|t| *t == b'?'),
-            Err(ErrorReason::Incomplete(Requirement::Unknown))
+            mock_slice_input().marker().next(),
+            Some(b'h')
         );
     }
+
+    // #[test]
+    // fn test_slice_input_split_pair() {
+    //     assert_eq!(
+    //         mock_slice_input().split_pair::<MockError, _>(|t| *t == b':'),
+    //         Ok((slice_input(b"hello"), slice_input(b"world")))
+    //     );
+
+    //     assert_eq!(
+    //         mock_slice_input().split_pair::<MockError, _>(|t| *t == b'd'),
+    //         Ok((slice_input(b"hello:worl"), empty_slice_input()))
+    //     );
+
+    //     assert_eq!(
+    //         mock_slice_input().split_pair::<MockError, _>(|t| *t == b'h'),
+    //         Ok((empty_slice_input(), slice_input(b"ello:world")))
+    //     );
+
+    //     assert_eq!(
+    //         mock_slice_input().split_pair::<MockError, _>(|t| *t == b'?'),
+    //         Err(ErrorReason::Incomplete(Requirement::Unknown))
+    //     );
+    // }
 }

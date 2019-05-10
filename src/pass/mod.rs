@@ -75,43 +75,6 @@ pub trait Pass<'i>: Sized + Debug + 'i {
             unexpected,
         ))
     }
-
-    /// Returns whether or not the input is empty.
-    #[inline]
-    fn input_is_empty(&'i self) -> bool {
-        self.input().is_empty()
-    }
-
-    /// Splits the first token from the input.
-    #[inline]
-    fn split_first(self) -> PassResult<'i, Self, (PassToken<'i, Self>, PassInput<'i, Self>)> {
-        let res = self.input().split_first();
-        self.with_input_result(res)
-    }
-
-    /// Splits an input in two, based on a predictate.
-    /// Will fail if cannot split into a pair.
-    #[inline]
-    fn split_pair<E, F>(
-        self,
-        pred: F,
-    ) -> PassResult<'i, Self, (PassSection<'i, Self>, PassInput<'i, Self>)>
-    where
-        F: FnMut(&PassToken<'i, Self>) -> bool,
-    {
-        let res = self.input().split_pair(pred);
-        self.with_input_result(res)
-    }
-
-    /// Splits an input in two, from an exact size.
-    #[inline]
-    fn split_at<E>(
-        self,
-        mid: usize,
-    ) -> PassResult<'i, Self, (PassSection<'i, Self>, PassInput<'i, Self>)> {
-        let res = self.input().split_at(mid);
-        self.with_input_result(res)
-    }
 }
 
 pub type PassError<'p, P> = <P as Pass<'p>>::Error;

@@ -1,18 +1,9 @@
-use crate::input::{ExpectedHint, Input, Token, Unexpected, TokenTag};
-use crate::pass::{Pass, PassError, PassInput, PassResult, PassSection, PassToken};
+mod hinting;
 
-pub fn hint<'p, P, F, O>(inner: F, _description: &'static str) -> impl Fn(P) -> PassResult<'p, P, O>
-where
-    P: Pass<'p>,
-    F: Fn(P) -> PassResult<'p, P, O>,
-{
-    move |pass: P| {
-        match inner(pass) {
-            Err((err, pass)) => Err((err, pass)), // TODO: Wrap with hint description
-            ok => ok,
-        }
-    }
-}
+use crate::input::{ExpectedHint, Input, InputMarker, Token, Unexpected, Requirement, TokenTag};
+use crate::pass::{Pass, PassInput, PassResult, PassSection, PassToken};
+
+pub use self::hinting::*;
 
 pub fn tag<'p, P, T>(tag: &'p [T]) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
 where
@@ -22,7 +13,8 @@ where
 {
     move |pass: P| {
         let tag_len = tag.len();
-        let ((input_tag, rest), pass) = pass.split_at::<PassError<'p, P>>(tag_len)?;
+        let input = pass.input();
+        let ((input_tag, rest), pass) = pass.with_input_result(input.split_at(tag_len))?;
         for i in 0..tag_len {
             if tag[i] == input_tag[i] {
                 continue;
@@ -37,37 +29,15 @@ where
     }
 }
 
-pub fn take_one_if<'p, P, F>(predictate: F) -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
-where
-    P: Pass<'p>,
-    F: Fn(PassToken<'p, P>) -> Result<PassToken<'p, P>, PassToken<'p, P>>,
-{
-    move |pass: P| {
-        let ((token, rest), pass) = pass.split_first()?;
-        match predictate(token) {
-            Ok(token) => Ok((token, pass.commit(rest))),
-            Err(token) => pass.with_input_error_unexpected(Unexpected {
-                unexpected: TokenTag::Token(token),
-                expecting: ExpectedHint::None,
-            }),
-        }
-    }
-}
-
 pub fn token<'p, P, T>(token: T) -> impl Fn(P) -> PassResult<'p, P, T>
 where
     P: Pass<'p>,
     T: Token + 'p,
     PassInput<'p, P>: Input<'p, Token = T>,
 {
-    let predictate = move |input_token| {
-        if token == input_token {
-            Ok(input_token)
-        } else {
-            Err(input_token)
-        }
-    };
-    take_one_if(predictate)
+    take_one_if(move |input_token: &T| {
+        token == *input_token
+    })
 }
 
 pub fn take_one<'p, P>() -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
@@ -75,7 +45,8 @@ where
     P: Pass<'p>,
 {
     move |pass: P| {
-        let ((token, rest), pass) = pass.split_first()?;
+        let input = pass.input();
+        let ((token, rest), pass) = pass.with_input_result(input.split_first())?;
         Ok((token, pass.commit(rest)))
     }
 }
@@ -85,25 +56,63 @@ where
     P: Pass<'p>,
 {
     move |pass: P| {
-        let ((taken, rest), pass) = pass.split_at::<PassError<'p, P>>(n)?;
+        let input = pass.input();
+        let ((taken, rest), pass) = pass.with_input_result(input.split_at(n))?;
         Ok((taken, pass.commit(rest)))
+    }
+}
+
+pub fn take_until<'p, P, F>(pred: F) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
+where
+    P: Pass<'p>,
+    F: Fn(&PassToken<'p, P>) -> bool,
+{
+    move |pass: P| {
+        let input = pass.input();
+        let mut marker = input.marker();
+        loop {
+            match marker.next() {
+                Some(ref token) if pred(token) => {
+                    let mark = marker.mark();
+                    let ((taken, rest), pass) = pass.with_input_result(input.split_mark(mark))?;
+                    return Ok((taken, pass.commit(rest)));
+                },
+                Some(_) => continue,
+                None => break
+            }
+        }
+        pass.with_input_error_incomplete(Requirement::Unknown)
+    }
+}
+
+pub fn take_one_if<'p, P, F>(pred: F) -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
+where
+    P: Pass<'p>,
+    F: Fn(&PassToken<'p, P>) -> bool,
+{
+    move |pass: P| {
+        let input = pass.input();
+        let ((token, rest), pass) = pass.with_input_result(input.split_first())?;
+        if pred(&token) {
+            Ok((token, pass.commit(rest)))
+        } else {
+            pass.with_input_error_unexpected(Unexpected {
+                unexpected: TokenTag::Token(token),
+                expecting: ExpectedHint::None,
+            })
+        }
     }
 }
 
 pub fn in_range<'p, P, T>(start: T, end: T) -> impl Fn(P) -> PassResult<'p, P, T>
 where
     P: Pass<'p>,
-    T: Token + 'p,
+    T: Token + PartialOrd + 'p,
     PassInput<'p, P>: Input<'p, Token = T>,
 {
-    let predictate = move |token| {
-        if start <= token && token <= end {
-            Ok(token)
-        } else {
-            Err(token)
-        }
-    };
-    take_one_if(predictate)
+    take_one_if(move |token: &T| {
+        start <= *token && *token <= end
+    })
 }
 
 pub fn or<'p, P, A, B, O>(a: A, b: B) -> impl Fn(P) -> PassResult<'p, P, O>

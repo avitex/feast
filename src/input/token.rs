@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::fmt::Debug;
 
 pub trait IntoBytes {
@@ -7,7 +6,7 @@ pub trait IntoBytes {
     fn into_bytes<'a>(self) -> Self::Bytes;
 }
 
-pub trait Token: Debug + Clone + IntoBytes + Eq + PartialOrd {
+pub trait Token: Sized + Debug + Clone + IntoBytes + Eq {
     fn byte_size() -> Option<usize>;
     fn is_ascii(&self) -> bool;
 }
