@@ -19,7 +19,7 @@ pub trait Capture {
     where
         Self: Sized,
         C: BuildableCapture,
-        C::Value: From<Self::Value>
+        C::Value: From<Self::Value>,
     {
         if self.is_complete() {
             C::from_determinate(self.into_value().into())

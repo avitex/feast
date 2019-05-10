@@ -1,9 +1,13 @@
 mod hinting;
+mod input;
+mod token;
 
-use crate::input::{ExpectedHint, Input, InputMarker, Requirement, Token, TokenTag, Unexpected};
-use crate::pass::{Pass, PassInput, PassResult, PassSection, PassToken};
+use crate::input::{ExpectedHint, Input, Token, TokenTag, Unexpected};
+use crate::pass::{Pass, PassInput, PassResult, PassSection};
 
 pub use self::hinting::*;
+pub use self::input::*;
+pub use self::token::*;
 
 pub fn tag<'p, P, T>(tag: &'p [T]) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
 where
@@ -29,90 +33,13 @@ where
     }
 }
 
-pub fn token<'p, P, T>(token: T) -> impl Fn(P) -> PassResult<'p, P, T>
-where
-    P: Pass<'p>,
-    T: Token + 'p,
-    PassInput<'p, P>: Input<'p, Token = T>,
-{
-    take_one_if(move |input_token: &T| token == *input_token)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-pub fn take_one<'p, P>() -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
-where
-    P: Pass<'p>,
-{
-    move |pass: P| {
-        let input = pass.input();
-        let ((token, rest), pass) = pass.with_input_result(input.split_first())?;
-        Ok((token, pass.commit(rest)))
-    }
-}
-
-pub fn take<'p, P>(n: usize) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
-where
-    P: Pass<'p>,
-{
-    move |pass: P| {
-        let input = pass.input();
-        let ((taken, rest), pass) = pass.with_input_result(input.split_at(n))?;
-        Ok((taken, pass.commit(rest)))
-    }
-}
-
-pub fn take_until<'p, P, F>(pred: F) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
-where
-    P: Pass<'p>,
-    F: Fn(&PassToken<'p, P>) -> bool,
-{
-    move |pass: P| {
-        let input = pass.input();
-        let mut marker = input.marker();
-        loop {
-            match marker.next() {
-                Some(ref token) if pred(token) => {
-                    let mark = marker.mark();
-                    let ((taken, rest), pass) = pass.with_input_result(input.split_mark(mark))?;
-                    return Ok((taken, pass.commit(rest)));
-                }
-                Some(_) => continue,
-                None => break,
-            }
-        }
-        pass.with_input_error_incomplete(Requirement::Unknown)
-    }
-}
-
-pub fn take_one_if<'p, P, F>(pred: F) -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
-where
-    P: Pass<'p>,
-    F: Fn(&PassToken<'p, P>) -> bool,
-{
-    move |pass: P| {
-        let input = pass.input();
-        let ((token, rest), pass) = pass.with_input_result(input.split_first())?;
-        if pred(&token) {
-            Ok((token, pass.commit(rest)))
-        } else {
-            pass.with_input_error_unexpected(Unexpected {
-                unexpected: TokenTag::Token(token),
-                expecting: ExpectedHint::None,
-            })
-        }
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 pub fn in_range<'p, P, T>(start: T, end: T) -> impl Fn(P) -> PassResult<'p, P, T>
 where
     P: Pass<'p>,
     T: Token + PartialOrd + 'p,
     PassInput<'p, P>: Input<'p, Token = T>,
 {
-    take_one_if(move |token: &T| start <= *token && *token <= end)
+    take_token_if(move |token: &T| start <= *token && *token <= end)
 }
 
 pub fn or<'p, P, A, B, O>(a: A, b: B) -> impl Fn(P) -> PassResult<'p, P, O>
@@ -149,6 +76,18 @@ where
     }
 }
 
+pub fn map<'p, P, F, FO, M, O>(inner: F, mapper: M) -> impl Fn(P) -> PassResult<'p, P, O>
+where
+    P: Pass<'p>,
+    F: Fn(P) -> PassResult<'p, P, FO>,
+    M: Fn(FO) -> O,
+{
+    move |pass: P| match inner(pass) {
+        Ok((val, pass)) => Ok((mapper(val), pass)),
+        Err(err) => Err(err),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,9 +104,9 @@ mod tests {
         TestPass::from(input)
     }
 
-    // fn empty_pass() -> TestPass {
-    //     test_pass(b"")
-    // }
+    fn empty_pass() -> TestPass {
+        test_pass(b"")
+    }
 
     #[test]
     fn test_peek_simple() {
@@ -177,6 +116,18 @@ mod tests {
             peek(ascii_digit)(pass.clone()),
             Ok((b'1', pass_out)) => {
                 assert_eq!(pass_out, pass);
+            }
+        );
+    }
+
+    #[test]
+    fn test_map_simple() {
+        let pass = test_pass(b"1");
+
+        assert_matches!(
+            map(ascii_digit, |digit| digit as char)(pass.clone()),
+            Ok(('1', pass_out)) => {
+                assert_eq!(pass_out, empty_pass());
             }
         );
     }
