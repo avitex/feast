@@ -1,6 +1,6 @@
 mod hinting;
 
-use crate::input::{ExpectedHint, Input, InputMarker, Token, Unexpected, Requirement, TokenTag};
+use crate::input::{ExpectedHint, Input, InputMarker, Requirement, Token, TokenTag, Unexpected};
 use crate::pass::{Pass, PassInput, PassResult, PassSection, PassToken};
 
 pub use self::hinting::*;
@@ -35,10 +35,10 @@ where
     T: Token + 'p,
     PassInput<'p, P>: Input<'p, Token = T>,
 {
-    take_one_if(move |input_token: &T| {
-        token == *input_token
-    })
+    take_one_if(move |input_token: &T| token == *input_token)
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 pub fn take_one<'p, P>() -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
 where
@@ -76,9 +76,9 @@ where
                     let mark = marker.mark();
                     let ((taken, rest), pass) = pass.with_input_result(input.split_mark(mark))?;
                     return Ok((taken, pass.commit(rest)));
-                },
+                }
                 Some(_) => continue,
-                None => break
+                None => break,
             }
         }
         pass.with_input_error_incomplete(Requirement::Unknown)
@@ -104,15 +104,15 @@ where
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 pub fn in_range<'p, P, T>(start: T, end: T) -> impl Fn(P) -> PassResult<'p, P, T>
 where
     P: Pass<'p>,
     T: Token + PartialOrd + 'p,
     PassInput<'p, P>: Input<'p, Token = T>,
 {
-    take_one_if(move |token: &T| {
-        start <= *token && *token <= end
-    })
+    take_one_if(move |token: &T| start <= *token && *token <= end)
 }
 
 pub fn or<'p, P, A, B, O>(a: A, b: B) -> impl Fn(P) -> PassResult<'p, P, O>

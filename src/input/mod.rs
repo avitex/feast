@@ -1,15 +1,15 @@
+mod capture;
 mod error;
 mod slice;
 mod token;
-mod capture;
 
 use std::fmt::Debug;
 use std::ops::Index;
 
+pub use self::capture::*;
 pub use self::error::*;
 pub use self::slice::*;
 pub use self::token::*;
-pub use self::capture::*;
 
 pub trait InputMarker: Iterator {
     type Mark;
@@ -18,7 +18,7 @@ pub trait InputMarker: Iterator {
     fn skip(&mut self, n: usize) -> bool;
 
     fn peek(&self) -> Option<Self::Token>;
-    
+
     fn child(&self) -> Self;
 
     fn mark(&self) -> Self::Mark;
@@ -60,7 +60,7 @@ pub trait ExactSizeInput<'i>: Input<'i> + Index<usize, Output = InputToken<'i, S
 
 // TODO: Reconsider this?
 // impl<'i, I> Capture for I
-// where 
+// where
 //     I: ExactSizeInput<'i>
 // {
 //     type Value = Self;

@@ -3,7 +3,7 @@ mod slice;
 
 use std::fmt::Debug;
 
-use crate::input::{self, Requirement, Input, InputSection, InputToken, Unexpected};
+use crate::input::{self, Input, InputSection, InputToken, Requirement, Unexpected};
 
 pub use self::error::*;
 pub use self::slice::*;
@@ -57,10 +57,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     }
 
     /// Create a pass error based on an incomplete input error.
-    fn with_input_error_incomplete<O>(
-        self,
-        requirement: Requirement,
-    ) -> PassResult<'i, Self, O> {
+    fn with_input_error_incomplete<O>(self, requirement: Requirement) -> PassResult<'i, Self, O> {
         self.with_input_error(<PassInputError<'i, Self> as input::Error<'i>>::incomplete(
             requirement,
         ))

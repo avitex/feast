@@ -44,9 +44,7 @@ where
         E: Error<'i, Token = Self::Token>,
     {
         if mid > self.len() {
-            Err(E::incomplete(Requirement::Exact(
-                mid - self.len(),
-            )))
+            Err(E::incomplete(Requirement::Exact(mid - self.len())))
         } else {
             let (consumed, rest) = self.0.split_at(mid);
             Ok((Self(consumed), Self(rest)))
@@ -55,7 +53,7 @@ where
 
     fn split_mark<E>(self, mark: Self::Mark) -> Result<(Self::Section, Self), E>
     where
-        E: Error<'i, Token = Self::Token> 
+        E: Error<'i, Token = Self::Token>,
     {
         self.split_at(mark)
     }
@@ -103,6 +101,9 @@ where
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+#[derive(Clone)]
 pub struct SliceMarker<'a, T: Token> {
     cursor: usize,
     items: &'a [T],
@@ -116,7 +117,6 @@ where
         self.len() == 0
     }
 }
-
 
 impl<'a, T> InputMarker for SliceMarker<'a, T>
 where
@@ -143,7 +143,7 @@ where
     }
 
     fn child(&self) -> Self {
-        Self::from(&self.items[self.cursor..])
+        self.clone()
     }
 
     fn mark(&self) -> Self::Mark {
@@ -161,7 +161,7 @@ where
         if self.at_end() {
             None
         } else {
-           let next = self.items[self.cursor].clone();
+            let next = self.items[self.cursor].clone();
             self.cursor += 1;
             Some(next)
         }
@@ -182,10 +182,7 @@ where
     T: Token,
 {
     fn from(items: &'i [T]) -> Self {
-        Self {
-            cursor: 0,
-            items,
-        }
+        Self { cursor: 0, items }
     }
 }
 
@@ -243,10 +240,7 @@ mod tests {
 
     #[test]
     fn test_slice_input_marker() {
-        assert_eq!(
-            mock_slice_input().marker().next(),
-            Some(b'h')
-        );
+        assert_eq!(mock_slice_input().marker().next(), Some(b'h'));
     }
 
     // #[test]
