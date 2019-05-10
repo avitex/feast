@@ -7,29 +7,9 @@ pub trait IntoBytes {
     fn into_bytes<'a>(self) -> Self::Bytes;
 }
 
-pub trait Token: Sized + Debug + Clone + IntoBytes + Eq {
+pub trait Token: Sized + Capture + Debug + Clone + IntoBytes + Eq {
     fn byte_size() -> Option<usize>;
     fn is_ascii(&self) -> bool;
-}
-
-impl<T> Capture for T
-where
-    T: Token,
-{
-    type Value = Self;
-
-    /// Tokens are always complete.
-    fn is_complete(&self) -> bool {
-        true
-    }
-
-    fn resolve(&mut self) {
-        ()
-    }
-
-    fn into_value(self) -> Self::Value {
-        self
-    }
 }
 
 impl Token for u8 {
@@ -43,6 +23,8 @@ impl Token for u8 {
         return self.is_ascii();
     }
 }
+
+impl_complete_capture!(u8);
 
 impl IntoBytes for u8 {
     type Bytes = [u8; 1];
@@ -63,6 +45,8 @@ impl Token for char {
         return self.is_ascii();
     }
 }
+
+impl_complete_capture!(char);
 
 impl IntoBytes for char {
     type Bytes = [u8; 4];

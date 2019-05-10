@@ -1,32 +1,3 @@
-pub trait CaptureBuilder {
-    /// Build a capture from a complete value.
-    fn from_determinate<C, V>(value: V) -> C
-    where
-        C: Capture<Value = V>;
-
-    /// Build a capture from a indeterminate value.
-    ///
-    /// Capture builders may internally resolve the value to be complete
-    /// if the capture source itself is complete.
-    fn from_indeterminate<C, V>(value: V) -> C
-    where
-        C: Capture<Value = V>;
-
-    /// Map one capture to another.
-    fn map<A, B>(parent: A) -> B
-    where
-        A: Capture,
-        B: Capture,
-        B::Value: From<A::Value>,
-    {
-        if parent.is_complete() {
-            Self::from_determinate(parent.into_value().into())
-        } else {
-            Self::from_indeterminate(parent.into_value().into())
-        }
-    }
-}
-
 pub trait Capture {
     /// The value type captured.
     type Value;
@@ -43,16 +14,30 @@ pub trait Capture {
     /// Consume the capture to get the value.
     fn into_value(self) -> Self::Value;
 
-    /// Map a capture to another.
+    // /// Map a capture to another.
     fn map<C, B>(self) -> C
     where
         Self: Sized,
-        C: Capture,
-        C::Value: From<Self::Value>,
-        B: CaptureBuilder,
+        C: BuildableCapture,
+        C::Value: From<Self::Value>
     {
-        B::map(self)
+        if self.is_complete() {
+            C::from_determinate(self.into_value().into())
+        } else {
+            C::from_indeterminate(self.into_value().into())
+        }
     }
+}
+
+pub trait BuildableCapture: Capture {
+    /// Build a capture from a complete value.
+    fn from_determinate(value: Self::Value) -> Self;
+
+    /// Build a capture from a indeterminate value.
+    ///
+    /// Capture may internally resolve the value to be complete
+    /// if the capture source itself is complete.
+    fn from_indeterminate(value: Self::Value) -> Self;
 }
 
 /// A capture that can be indeterminate.
@@ -60,22 +45,6 @@ pub trait Capture {
 pub struct StreamCapture<T> {
     value: T,
     complete: bool,
-}
-
-impl<T> StreamCapture<T> {
-    pub fn from_determinate(value: T) -> Self {
-        Self {
-            value,
-            complete: true,
-        }
-    }
-
-    pub fn from_indeterminate(value: T) -> Self {
-        Self {
-            value,
-            complete: false,
-        }
-    }
 }
 
 impl<T> Capture for StreamCapture<T> {
@@ -94,16 +63,26 @@ impl<T> Capture for StreamCapture<T> {
     }
 }
 
+impl<T> BuildableCapture for StreamCapture<T> {
+    fn from_determinate(value: T) -> Self {
+        Self {
+            value,
+            complete: true,
+        }
+    }
+
+    fn from_indeterminate(value: T) -> Self {
+        Self {
+            value,
+            complete: false,
+        }
+    }
+}
+
 /// A capture that cannot be indeterminate.
 #[derive(Debug, PartialEq)]
 pub struct CompleteCapture<T> {
     value: T,
-}
-
-impl<T> CompleteCapture<T> {
-    pub fn from_determinate(value: T) -> Self {
-        Self { value }
-    }
 }
 
 impl<T> Capture for CompleteCapture<T> {
@@ -122,8 +101,18 @@ impl<T> Capture for CompleteCapture<T> {
     }
 }
 
+impl<T> BuildableCapture for CompleteCapture<T> {
+    fn from_determinate(value: T) -> Self {
+        Self::from(value)
+    }
+
+    fn from_indeterminate(value: T) -> Self {
+        Self::from(value)
+    }
+}
+
 impl<T> From<T> for CompleteCapture<T> {
     fn from(value: T) -> Self {
-        Self::from_determinate(value)
+        Self { value }
     }
 }

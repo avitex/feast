@@ -72,6 +72,25 @@ where
     }
 }
 
+impl<'i, T> Capture for SliceInput<'i, T>
+where
+    T: Token,
+{
+    type Value = Self;
+
+    fn is_complete(&self) -> bool {
+        true
+    }
+
+    fn resolve(&mut self) {
+        ()
+    }
+
+    fn into_value(self) -> Self::Value {
+        self
+    }
+}
+
 impl<'i, T> Index<usize> for SliceInput<'i, T>
 where
     T: Token,
@@ -242,27 +261,4 @@ mod tests {
     fn test_slice_input_marker() {
         assert_eq!(mock_slice_input().marker().next(), Some(b'h'));
     }
-
-    // #[test]
-    // fn test_slice_input_split_pair() {
-    //     assert_eq!(
-    //         mock_slice_input().split_pair::<MockError, _>(|t| *t == b':'),
-    //         Ok((slice_input(b"hello"), slice_input(b"world")))
-    //     );
-
-    //     assert_eq!(
-    //         mock_slice_input().split_pair::<MockError, _>(|t| *t == b'd'),
-    //         Ok((slice_input(b"hello:worl"), empty_slice_input()))
-    //     );
-
-    //     assert_eq!(
-    //         mock_slice_input().split_pair::<MockError, _>(|t| *t == b'h'),
-    //         Ok((empty_slice_input(), slice_input(b"ello:world")))
-    //     );
-
-    //     assert_eq!(
-    //         mock_slice_input().split_pair::<MockError, _>(|t| *t == b'?'),
-    //         Err(ErrorReason::Incomplete(Requirement::Unknown))
-    //     );
-    // }
 }

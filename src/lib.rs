@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 pub mod ascii;
 pub mod byte;
 pub mod core;
