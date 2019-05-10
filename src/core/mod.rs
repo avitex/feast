@@ -88,6 +88,18 @@ where
     }
 }
 
+pub fn and_then<'p, P, F, FO, T, O>(inner: F, then: T) -> impl Fn(P) -> PassResult<'p, P, O>
+where
+    P: Pass<'p>,
+    F: Fn(P) -> PassResult<'p, P, FO>,
+    T: Fn((FO, P)) -> PassResult<'p, P, O>,
+{
+    move |pass: P| match inner(pass) {
+        Ok((val, pass)) => then((val, pass)),
+        Err(err) => Err(err),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
