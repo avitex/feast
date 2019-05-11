@@ -1,0 +1,19 @@
+[package]
+name = "feast"
+version = "0.1.0"
+authors = ["avitex <theavitex@gmail.com>"]
+edition = "2018"
+description = "Experimental parsing library with a focus on bytes"
+documentation = "https://docs.rs/feast"
+homepage = "https://github.com/avitex/feast"
+repository = "https://github.com/avitex/feast"
+license = "MIT"
+
+[badges]
+travis-ci = { repository = "avitex/feast", branch = "master" }
+maintenance = { status = "experimental" }
+
+[dependencies]
+
+[dev-dependencies]
+assert_matches = "1.3"
