@@ -11,18 +11,15 @@ pub use self::error::*;
 pub use self::slice::*;
 pub use self::token::*;
 
-pub trait InputMarker: Iterator {
+pub trait InputMarker {
     type Mark;
-    type Token: Token;
-
-    fn skip(&mut self, n: usize) -> bool;
-
-    fn peek(&self) -> Option<Self::Token>;
-
-    fn child(&self) -> Self;
 
     fn mark(&self) -> Self::Mark;
 }
+
+pub trait InputIterator<T: Token>: InputMarker + Iterator<Item = T> {}
+
+impl<I, T> InputIterator<T> for I where T: Token, I: InputMarker + Iterator<Item = T> {}
 
 pub trait Input<'i>: Sized + Debug {
     type Mark;
@@ -31,7 +28,7 @@ pub trait Input<'i>: Sized + Debug {
     /// A section, or sequence of tokens from the input.
     type Section: ExactSizeInput<'i, Token = Self::Token>;
 
-    type Marker: InputMarker<Mark = Self::Mark, Token = Self::Token> + Iterator<Item = Self::Token>;
+    type Iterator: InputIterator<Self::Token> + InputMarker<Mark = Self::Mark>;
 
     /// Returns whether or not the input is empty.
     fn is_empty(&self) -> bool;
@@ -50,7 +47,7 @@ pub trait Input<'i>: Sized + Debug {
     where
         E: Error<'i, Token = Self::Token>;
 
-    fn marker(&self) -> Self::Marker;
+    fn iter(&self) -> Self::Iterator;
 }
 
 pub trait ExactSizeInput<'i>:

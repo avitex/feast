@@ -100,23 +100,22 @@ where
     }
 }
 
-pub fn complete<'p, P, F, O>(sub: F) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn complete<'p, P, F, C>(sub: F) -> impl Fn(P) -> PassResult<'p, P, C::Value>
 where
     P: Pass<'p>,
-    O: Capture,
-    F: Fn(P) -> PassResult<'p, P, O>,
+    C: Capture,
+    F: Fn(P) -> PassResult<'p, P, C>,
 {
     move |pass: P| {
-        let input = pass.input();
         match sub(pass) {
             Ok((out, pass)) => {
                 if out.is_complete() {
-                    Ok((out, pass.commit(input)))
+                    Ok((out.into_value(), pass))
                 } else {
                     Err(pass.with_input_error_incomplete(Requirement::Unknown))
                 }
             },
-            err => err,
+            Err(err) => Err(err),
         }
     }
 }

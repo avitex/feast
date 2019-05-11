@@ -23,7 +23,7 @@ where
     type Mark = usize;
     type Token = T;
     type Section = Self;
-    type Marker = SliceMarker<'i, T>;
+    type Iterator = SliceIterator<'i, T>;
 
     fn is_empty(&self) -> bool {
         self.0.is_empty()
@@ -58,8 +58,8 @@ where
         self.split_at(mark)
     }
 
-    fn marker(&self) -> Self::Marker {
-        SliceMarker::from(self.0)
+    fn iter(&self) -> Self::Iterator {
+        SliceIterator::from(self.0)
     }
 }
 
@@ -123,12 +123,12 @@ where
 ////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Clone)]
-pub struct SliceMarker<'a, T: Token> {
+pub struct SliceIterator<'a, T: Token> {
     cursor: usize,
     items: &'a [T],
 }
 
-impl<'a, T> SliceMarker<'a, T>
+impl<'a, T> SliceIterator<'a, T>
 where
     T: Token,
 {
@@ -137,40 +137,51 @@ where
     }
 }
 
-impl<'a, T> InputMarker for SliceMarker<'a, T>
+impl<'a, T> InputMarker for SliceIterator<'a, T>
 where
     T: Token,
 {
     type Mark = usize;
-    type Token = T;
-
-    fn skip(&mut self, n: usize) -> bool {
-        if self.len() > n {
-            self.cursor += n;
-            true
-        } else {
-            false
-        }
-    }
-
-    fn peek(&self) -> Option<Self::Token> {
-        if self.at_end() {
-            None
-        } else {
-            Some(self.items[self.cursor].clone())
-        }
-    }
-
-    fn child(&self) -> Self {
-        self.clone()
-    }
 
     fn mark(&self) -> Self::Mark {
         self.cursor
     }
 }
 
-impl<'a, T> Iterator for SliceMarker<'a, T>
+// impl<'a, T> InputMarker for SliceIterator<'a, T>
+// where
+//     T: Token,
+// {
+//     type Mark = usize;
+//     type Token = T;
+
+//     fn skip(&mut self, n: usize) -> bool {
+//         if self.len() > n {
+//             self.cursor += n;
+//             true
+//         } else {
+//             false
+//         }
+//     }
+
+//     fn peek(&self) -> Option<Self::Token> {
+//         if self.at_end() {
+//             None
+//         } else {
+//             Some(self.items[self.cursor].clone())
+//         }
+//     }
+
+//     fn child(&self) -> Self {
+//         self.clone()
+//     }
+
+//     fn mark(&self) -> Self::Mark {
+//         self.cursor
+//     }
+// }
+
+impl<'a, T> Iterator for SliceIterator<'a, T>
 where
     T: Token,
 {
@@ -187,7 +198,7 @@ where
     }
 }
 
-impl<'a, T> ExactSizeIterator for SliceMarker<'a, T>
+impl<'a, T> ExactSizeIterator for SliceIterator<'a, T>
 where
     T: Token,
 {
@@ -196,7 +207,7 @@ where
     }
 }
 
-impl<'i, T> From<&'i [T]> for SliceMarker<'i, T>
+impl<'i, T> From<&'i [T]> for SliceIterator<'i, T>
 where
     T: Token,
 {
@@ -259,6 +270,6 @@ mod tests {
 
     #[test]
     fn test_slice_input_marker() {
-        assert_eq!(mock_slice_input().marker().next(), Some(b'h'));
+        assert_eq!(mock_slice_input().iter().next(), Some(b'h'));
     }
 }

@@ -19,7 +19,7 @@ where
 {
     move |pass: P| {
         let input = pass.input();
-        let mut marker = input.marker();
+        let mut marker = input.iter();
         loop {
             match marker.next() {
                 Some(ref token) if pred(token) => {
