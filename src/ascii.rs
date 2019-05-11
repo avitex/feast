@@ -115,7 +115,7 @@ mod tests {
         );
 
         assert_matches!(
-            ascii_digit_value(pass),
+            parse_ascii_digit(pass),
             Ok((1, pass_out)) => {
                 assert_eq!(pass_out, empty_pass())
             }
