@@ -2,7 +2,7 @@ mod hinting;
 mod input;
 mod token;
 
-use crate::input::{ExpectedHint, Input, Token, TokenTag, Unexpected};
+use crate::input::{ExpectedHint, Capture, Input, Token, Requirement, TokenTag, Unexpected};
 use crate::pass::{Pass, PassInput, PassResult, PassSection};
 
 pub use self::hinting::*;
@@ -62,41 +62,62 @@ where
     }
 }
 
-pub fn peek<'p, P, F, O>(inner: F) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn peek<'p, P, F, O>(sub: F) -> impl Fn(P) -> PassResult<'p, P, O>
 where
     P: Pass<'p>,
     F: Fn(P) -> PassResult<'p, P, O>,
 {
     move |pass: P| {
         let input = pass.input();
-        match inner(pass) {
+        match sub(pass) {
             Ok((out, pass)) => Ok((out, pass.commit(input))),
             err => err,
         }
     }
 }
 
-pub fn map<'p, P, F, FO, M, O>(inner: F, mapper: M) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn map<'p, P, F, FO, M, O>(sub: F, mapper: M) -> impl Fn(P) -> PassResult<'p, P, O>
 where
     P: Pass<'p>,
     F: Fn(P) -> PassResult<'p, P, FO>,
     M: Fn(FO) -> O,
 {
-    move |pass: P| match inner(pass) {
+    move |pass: P| match sub(pass) {
         Ok((val, pass)) => Ok((mapper(val), pass)),
         Err(err) => Err(err),
     }
 }
 
-pub fn and_then<'p, P, F, FO, T, O>(inner: F, then: T) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn and_then<'p, P, F, FO, T, O>(sub: F, then: T) -> impl Fn(P) -> PassResult<'p, P, O>
 where
     P: Pass<'p>,
     F: Fn(P) -> PassResult<'p, P, FO>,
     T: Fn((FO, P)) -> PassResult<'p, P, O>,
 {
-    move |pass: P| match inner(pass) {
+    move |pass: P| match sub(pass) {
         Ok((val, pass)) => then((val, pass)),
         Err(err) => Err(err),
+    }
+}
+
+pub fn complete<'p, P, F, O>(sub: F) -> impl Fn(P) -> PassResult<'p, P, O>
+where
+    P: Pass<'p>,
+    O: Capture,
+    F: Fn(P) -> PassResult<'p, P, O>,
+{
+    move |pass: P| {
+        let input = pass.input();
+        match sub(pass) {
+            Ok((out, pass)) => {
+                if out.is_complete() {
+                    Ok((out, pass.commit(input)))
+                } else {
+                    pass.with_input_error_incomplete(Requirement::Unknown)
+                }
+            },
+            err => err,
+        }
     }
 }
 
