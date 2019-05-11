@@ -23,10 +23,10 @@ where
             if tag[i] == input_tag[i] {
                 continue;
             } else {
-                return pass.with_input_error_unexpected(Unexpected {
+                return Err(pass.with_input_error_unexpected(Unexpected {
                     unexpected: TokenTag::Token(input_tag[i].clone()),
                     expecting: ExpectedHint::Tag(tag),
-                });
+                }));
             }
         }
         Ok((input_tag, pass.commit(rest)))
@@ -113,7 +113,7 @@ where
                 if out.is_complete() {
                     Ok((out, pass.commit(input)))
                 } else {
-                    pass.with_input_error_incomplete(Requirement::Unknown)
+                    Err(pass.with_input_error_incomplete(Requirement::Unknown))
                 }
             },
             err => err,

@@ -32,10 +32,10 @@ where
         if pred(&token) {
             Ok((token, pass.commit(rest)))
         } else {
-            pass.with_input_error_unexpected(Unexpected {
+            Err(pass.with_input_error_unexpected(Unexpected {
                 unexpected: TokenTag::Token(token),
                 expecting: ExpectedHint::None,
-            })
+            }))
         }
     }
 }

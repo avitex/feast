@@ -31,6 +31,6 @@ where
                 None => break,
             }
         }
-        pass.with_input_error_incomplete(Requirement::Unknown)
+        Err(pass.with_input_error_incomplete(Requirement::Unknown))
     }
 }
