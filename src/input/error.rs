@@ -8,11 +8,6 @@ pub trait Error<'a>: Debug + PartialEq {
     /// If the error is fatal, we won't be able to try again.
     fn is_fatal(&self) -> bool;
 
-    /// If is completable, perhaps we should try again?.
-    fn is_completable(&self) -> bool {
-        !self.is_fatal()
-    }
-
     /// Create a new unexpected error with details.
     fn unexpected(unexpected: Unexpected<'a, Self::Token>) -> Self;
 
