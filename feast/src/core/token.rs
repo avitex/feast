@@ -4,7 +4,7 @@ use crate::pass::{Pass, PassInput, PassResult, PassToken};
 pub fn token<'p, P, T>(token: T) -> impl Fn(P) -> PassResult<'p, P, T>
 where
     P: Pass<'p>,
-    T: Token + 'p,
+    T: Token,
     PassInput<'p, P>: Input<'p, Token = T>,
 {
     take_token_if(move |input_token: &T| token == *input_token)

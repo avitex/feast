@@ -36,7 +36,7 @@ where
 pub fn in_range<'p, P, T>(start: T, end: T) -> impl Fn(P) -> PassResult<'p, P, T>
 where
     P: Pass<'p>,
-    T: Token + PartialOrd + 'p,
+    T: Token + PartialOrd,
     PassInput<'p, P>: Input<'p, Token = T>,
 {
     take_token_if(move |token: &T| start <= *token && *token <= end)
