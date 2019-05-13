@@ -4,18 +4,18 @@ use super::{Context, Error, Pass, PassInput};
 use crate::input::{SliceInput, Token};
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct SlicePassContext<'p, T>
+pub struct SlicePassContext<'i, T>
 where
     T: Token,
 {
-    input: SliceInput<'p, T>,
+    input: SliceInput<'i, T>,
 }
 
-impl<'p, T> Context<'p> for SlicePassContext<'p, T>
+impl<'i, T> Context<'i> for SlicePassContext<'i, T>
 where
     T: Token,
 {
-    type Input = SliceInput<'p, T>;
+    type Input = SliceInput<'i, T>;
 
     fn input(&self) -> Self::Input {
         self.input.clone()
@@ -23,22 +23,22 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct SlicePass<'p, T, E>
+pub struct SlicePass<'i, T, E>
 where
     T: Token,
-    E: Error<'p>,
+    E: Error<'i>,
 {
-    ctx: SlicePassContext<'p, T>,
+    ctx: SlicePassContext<'i, T>,
     _err: PhantomData<E>,
 }
 
-impl<'p, T, E> Pass<'p> for SlicePass<'p, T, E>
+impl<'i, T, E> Pass<'i> for SlicePass<'i, T, E>
 where
     T: Token,
-    E: Error<'p, Context = SlicePassContext<'p, T>>,
+    E: Error<'i, Context = SlicePassContext<'i, T>>,
 {
     type Error = E;
-    type Context = SlicePassContext<'p, T>;
+    type Context = SlicePassContext<'i, T>;
 
     fn context(&self) -> &Self::Context {
         &self.ctx
@@ -48,18 +48,18 @@ where
         self.ctx
     }
 
-    fn commit(mut self, rest: PassInput<'p, Self>) -> Self {
+    fn commit(mut self, rest: PassInput<'i, Self>) -> Self {
         self.ctx.input = rest;
         self
     }
 }
 
-impl<'p, T, E> From<&'p [T]> for SlicePass<'p, T, E>
+impl<'i, T, E> From<&'i [T]> for SlicePass<'i, T, E>
 where
     T: Token,
-    E: Error<'p, Context = SlicePassContext<'p, T>>,
+    E: Error<'i, Context = SlicePassContext<'i, T>>,
 {
-    fn from(slice: &'p [T]) -> Self {
+    fn from(slice: &'i [T]) -> Self {
         Self {
             ctx: SlicePassContext {
                 input: SliceInput::from(slice),

@@ -9,11 +9,11 @@ pub use self::hinting::*;
 pub use self::input::*;
 pub use self::token::*;
 
-pub fn tag<'p, P, T>(tag: &'p [T]) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
+pub fn tag<'i, P, T>(tag: &'i [T]) -> impl Fn(P) -> PassResult<'i, P, PassSection<'i, P>>
 where
-    P: Pass<'p>,
+    P: Pass<'i>,
     T: Token,
-    PassInput<'p, P>: Input<'p, Token = T>,
+    PassInput<'i, P>: Input<'i, Token = T>,
 {
     move |pass: P| {
         let tag_len = tag.len();
@@ -33,20 +33,20 @@ where
     }
 }
 
-pub fn in_range<'p, P, T>(start: T, end: T) -> impl Fn(P) -> PassResult<'p, P, T>
+pub fn in_range<'i, P, T>(start: T, end: T) -> impl Fn(P) -> PassResult<'i, P, T>
 where
-    P: Pass<'p>,
+    P: Pass<'i>,
     T: Token + PartialOrd,
-    PassInput<'p, P>: Input<'p, Token = T>,
+    PassInput<'i, P>: Input<'i, Token = T>,
 {
     take_token_if(move |token: &T| start <= *token && *token <= end)
 }
 
-pub fn or<'p, P, A, B, O>(a: A, b: B) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn or<'i, P, A, B, O>(a: A, b: B) -> impl Fn(P) -> PassResult<'i, P, O>
 where
-    P: Pass<'p>,
-    A: Fn(P) -> PassResult<'p, P, O>,
-    B: Fn(P) -> PassResult<'p, P, O>,
+    P: Pass<'i>,
+    A: Fn(P) -> PassResult<'i, P, O>,
+    B: Fn(P) -> PassResult<'i, P, O>,
 {
     move |pass: P| {
         match a(pass) {
@@ -62,10 +62,10 @@ where
     }
 }
 
-pub fn peek<'p, P, F, O>(sub: F) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn peek<'i, P, F, O>(sub: F) -> impl Fn(P) -> PassResult<'i, P, O>
 where
-    P: Pass<'p>,
-    F: Fn(P) -> PassResult<'p, P, O>,
+    P: Pass<'i>,
+    F: Fn(P) -> PassResult<'i, P, O>,
 {
     move |pass: P| {
         let input = pass.input();
@@ -76,10 +76,10 @@ where
     }
 }
 
-pub fn map<'p, P, F, FO, M, O>(sub: F, mapper: M) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn map<'i, P, F, FO, M, O>(sub: F, mapper: M) -> impl Fn(P) -> PassResult<'i, P, O>
 where
-    P: Pass<'p>,
-    F: Fn(P) -> PassResult<'p, P, FO>,
+    P: Pass<'i>,
+    F: Fn(P) -> PassResult<'i, P, FO>,
     M: Fn(FO) -> O,
 {
     move |pass: P| match sub(pass) {
@@ -88,11 +88,11 @@ where
     }
 }
 
-pub fn and_then<'p, P, F, FO, T, O>(sub: F, then: T) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn and_then<'i, P, F, FO, T, O>(sub: F, then: T) -> impl Fn(P) -> PassResult<'i, P, O>
 where
-    P: Pass<'p>,
-    F: Fn(P) -> PassResult<'p, P, FO>,
-    T: Fn((FO, P)) -> PassResult<'p, P, O>,
+    P: Pass<'i>,
+    F: Fn(P) -> PassResult<'i, P, FO>,
+    T: Fn((FO, P)) -> PassResult<'i, P, O>,
 {
     move |pass: P| match sub(pass) {
         Ok((val, pass)) => then((val, pass)),
@@ -100,11 +100,11 @@ where
     }
 }
 
-pub fn complete<'p, P, F, C>(sub: F) -> impl Fn(P) -> PassResult<'p, P, C::Value>
+pub fn complete<'i, P, F, C>(sub: F) -> impl Fn(P) -> PassResult<'i, P, C::Value>
 where
-    P: Pass<'p>,
+    P: Pass<'i>,
     C: Capture,
-    F: Fn(P) -> PassResult<'p, P, C>,
+    F: Fn(P) -> PassResult<'i, P, C>,
 {
     move |pass: P| {
         match sub(pass) {

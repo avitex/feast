@@ -4,10 +4,10 @@ use crate::pass::{Pass, PassInput, PassResult};
 use crate::core::*;
 
 /// Consumes a byte if it is an ASCII lowercase character`[a-z]`.
-pub fn ascii_lowercase<'p, P>(pass: P) -> PassResult<'p, P, u8>
+pub fn ascii_lowercase<'i, P>(pass: P) -> PassResult<'i, P, u8>
 where
-    P: Pass<'p>,
-    PassInput<'p, P>: Input<'p, Token = u8>,
+    P: Pass<'i>,
+    PassInput<'i, P>: Input<'i, Token = u8>,
 {
     hint(
         take_token_if(u8::is_ascii_lowercase),
@@ -16,10 +16,10 @@ where
 }
 
 /// Consumes a byte if it is an ASCII uppercase character `[A-Z]`.
-pub fn ascii_uppercase<'p, P>(pass: P) -> PassResult<'p, P, u8>
+pub fn ascii_uppercase<'i, P>(pass: P) -> PassResult<'i, P, u8>
 where
-    P: Pass<'p>,
-    PassInput<'p, P>: Input<'p, Token = u8>,
+    P: Pass<'i>,
+    PassInput<'i, P>: Input<'i, Token = u8>,
 {
     hint(
         take_token_if(u8::is_ascii_uppercase),
@@ -28,10 +28,10 @@ where
 }
 
 /// Consumes a byte if it is an ASCII alphabetic character `[a-zA-Z]`.
-pub fn ascii_alphabetic<'p, P>(pass: P) -> PassResult<'p, P, u8>
+pub fn ascii_alphabetic<'i, P>(pass: P) -> PassResult<'i, P, u8>
 where
-    P: Pass<'p>,
-    PassInput<'p, P>: Input<'p, Token = u8>,
+    P: Pass<'i>,
+    PassInput<'i, P>: Input<'i, Token = u8>,
 {
     hint(
         take_token_if(u8::is_ascii_alphabetic),
@@ -40,10 +40,10 @@ where
 }
 
 /// Consumes a byte if it is an ASCII decimal digit `[0-9]`.
-pub fn ascii_digit<'p, P>(pass: P) -> PassResult<'p, P, u8>
+pub fn ascii_digit<'i, P>(pass: P) -> PassResult<'i, P, u8>
 where
-    P: Pass<'p>,
-    PassInput<'p, P>: Input<'p, Token = u8>,
+    P: Pass<'i>,
+    PassInput<'i, P>: Input<'i, Token = u8>,
 {
     hint(
         take_token_if(u8::is_ascii_digit),
@@ -52,10 +52,10 @@ where
 }
 
 /// Consumes a byte if it is an ASCII hexadecimal digit `[0-9A-Fa-f]`.
-pub fn ascii_hexdigit<'p, P>(pass: P) -> PassResult<'p, P, u8>
+pub fn ascii_hexdigit<'i, P>(pass: P) -> PassResult<'i, P, u8>
 where
-    P: Pass<'p>,
-    PassInput<'p, P>: Input<'p, Token = u8>,
+    P: Pass<'i>,
+    PassInput<'i, P>: Input<'i, Token = u8>,
 {
     hint(
         take_token_if(u8::is_ascii_hexdigit),
@@ -64,10 +64,10 @@ where
 }
 
 /// Consumes a byte if it is an ASCII alphanumeric character `[a-zA-Z0-9]`.
-pub fn ascii_alphanumeric<'p, P>(pass: P) -> PassResult<'p, P, u8>
+pub fn ascii_alphanumeric<'i, P>(pass: P) -> PassResult<'i, P, u8>
 where
-    P: Pass<'p>,
-    PassInput<'p, P>: Input<'p, Token = u8>,
+    P: Pass<'i>,
+    PassInput<'i, P>: Input<'i, Token = u8>,
 {
     hint(
         take_token_if(u8::is_ascii_alphanumeric),
@@ -76,10 +76,10 @@ where
 }
 
 /// Parses a ASCII decimal digit.
-pub fn parse_ascii_digit<'p, P>(pass: P) -> PassResult<'p, P, u8>
+pub fn parse_ascii_digit<'i, P>(pass: P) -> PassResult<'i, P, u8>
 where
-    P: Pass<'p>,
-    PassInput<'p, P>: Input<'p, Token = u8>,
+    P: Pass<'i>,
+    PassInput<'i, P>: Input<'i, Token = u8>,
 {
     map(ascii_digit, |t| t - b'0')(pass)
 }

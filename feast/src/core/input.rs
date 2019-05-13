@@ -1,9 +1,9 @@
 use crate::input::{Input, InputMarker, Requirement};
 use crate::pass::{Pass, PassResult, PassSection, PassToken};
 
-pub fn take_input<'p, P>(n: usize) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
+pub fn take_input<'i, P>(n: usize) -> impl Fn(P) -> PassResult<'i, P, PassSection<'i, P>>
 where
-    P: Pass<'p>,
+    P: Pass<'i>,
 {
     move |pass: P| {
         let input = pass.input();
@@ -12,10 +12,10 @@ where
     }
 }
 
-pub fn take_input_until<'p, P, F>(pred: F) -> impl Fn(P) -> PassResult<'p, P, PassSection<'p, P>>
+pub fn take_input_until<'i, P, F>(pred: F) -> impl Fn(P) -> PassResult<'i, P, PassSection<'i, P>>
 where
-    P: Pass<'p>,
-    F: Fn(&PassToken<'p, P>) -> bool,
+    P: Pass<'i>,
+    F: Fn(&PassToken<'i, P>) -> bool,
 {
     move |pass: P| {
         let input = pass.input();

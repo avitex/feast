@@ -71,25 +71,25 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     }
 }
 
-pub type PassError<'p, P> = <P as Pass<'p>>::Error;
-pub type PassContext<'p, P> = <P as Pass<'p>>::Context;
-pub type PassInput<'p, P> = <PassContext<'p, P> as Context<'p>>::Input;
-pub type PassToken<'p, P> = InputToken<'p, PassInput<'p, P>>;
-pub type PassSection<'p, P> = InputSection<'p, PassInput<'p, P>>;
-pub type PassResult<'p, P, O> = Result<(O, P), (PassError<'p, P>, P)>;
+pub type PassError<'i, P> = <P as Pass<'i>>::Error;
+pub type PassContext<'i, P> = <P as Pass<'i>>::Context;
+pub type PassInput<'i, P> = <PassContext<'i, P> as Context<'i>>::Input;
+pub type PassToken<'i, P> = InputToken<'i, PassInput<'i, P>>;
+pub type PassSection<'i, P> = InputSection<'i, PassInput<'i, P>>;
+pub type PassResult<'i, P, O> = Result<(O, P), (PassError<'i, P>, P)>;
 pub type PassInputError<'i, P> = <<P as Pass<'i>>::Error as Error<'i>>::InputError;
 
-// pub trait PassWithToken<'p, T>: Pass<'p>
+// pub trait PassWithToken<'i, T>: Pass<'i>
 // where
 //     T: Token,
-//     PassInput<'p, Self>: Input<Token = T>,
+//     PassInput<'i, Self>: Input<Token = T>,
 // {
 // }
 
-// impl<'p, P, T> PassWithToken<'p, T> for P
+// impl<'i, P, T> PassWithToken<'i, T> for P
 // where
 //     T: Token,
-//     P: Pass<'p>,
-//     PassInput<'p, P>: Input<Token = T>,
+//     P: Pass<'i>,
+//     PassInput<'i, P>: Input<Token = T>,
 // {
 // }

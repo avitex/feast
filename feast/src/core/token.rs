@@ -1,18 +1,18 @@
 use crate::input::{ExpectedHint, Input, Token, TokenTag, Unexpected};
 use crate::pass::{Pass, PassInput, PassResult, PassToken};
 
-pub fn token<'p, P, T>(token: T) -> impl Fn(P) -> PassResult<'p, P, T>
+pub fn token<'i, P, T>(token: T) -> impl Fn(P) -> PassResult<'i, P, T>
 where
-    P: Pass<'p>,
+    P: Pass<'i>,
     T: Token,
-    PassInput<'p, P>: Input<'p, Token = T>,
+    PassInput<'i, P>: Input<'i, Token = T>,
 {
     take_token_if(move |input_token: &T| token == *input_token)
 }
 
-pub fn take_token<'p, P>() -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
+pub fn take_token<'i, P>() -> impl Fn(P) -> PassResult<'i, P, PassToken<'i, P>>
 where
-    P: Pass<'p>,
+    P: Pass<'i>,
 {
     move |pass: P| {
         let input = pass.input();
@@ -21,10 +21,10 @@ where
     }
 }
 
-pub fn take_token_if<'p, P, F>(pred: F) -> impl Fn(P) -> PassResult<'p, P, PassToken<'p, P>>
+pub fn take_token_if<'i, P, F>(pred: F) -> impl Fn(P) -> PassResult<'i, P, PassToken<'i, P>>
 where
-    P: Pass<'p>,
-    F: Fn(&PassToken<'p, P>) -> bool,
+    P: Pass<'i>,
+    F: Fn(&PassToken<'i, P>) -> bool,
 {
     move |pass: P| {
         let input = pass.input();

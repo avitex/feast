@@ -1,9 +1,9 @@
 use crate::pass::{Pass, PassResult};
 
-pub fn hint<'p, P, F, O>(sub: F, _description: &'static str) -> impl Fn(P) -> PassResult<'p, P, O>
+pub fn hint<'i, P, F, O>(sub: F, _description: &'static str) -> impl Fn(P) -> PassResult<'i, P, O>
 where
-    P: Pass<'p>,
-    F: Fn(P) -> PassResult<'p, P, O>,
+    P: Pass<'i>,
+    F: Fn(P) -> PassResult<'i, P, O>,
 {
     move |pass: P| {
         match sub(pass) {
