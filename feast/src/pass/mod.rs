@@ -30,7 +30,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     fn commit(self, rest: PassInput<'i, Self>) -> Self;
 
     /// Get the input for this pass.
-    fn input<'ii>(&'ii self) -> PassInput<'i, Self> {
+    fn input(&self) -> PassInput<'i, Self> {
         self.context().input()
     }
 
