@@ -19,7 +19,12 @@ pub trait InputMarker {
 
 pub trait InputIterator<T: Token>: InputMarker + Iterator<Item = T> {}
 
-impl<I, T> InputIterator<T> for I where T: Token, I: InputMarker + Iterator<Item = T> {}
+impl<I, T> InputIterator<T> for I
+where
+    T: Token,
+    I: InputMarker + Iterator<Item = T>,
+{
+}
 
 pub trait Input<'i>: Sized + Debug {
     type Mark;

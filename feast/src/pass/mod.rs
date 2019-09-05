@@ -49,7 +49,7 @@ pub trait Pass<'i>: Sized + Debug + 'i {
     fn with_input_error(self, err: PassInputError<'i, Self>) -> (PassError<'i, Self>, Self) {
         (
             <PassError<'i, Self> as Error<'i>>::from_input(self.context(), err),
-            self
+            self,
         )
     }
 

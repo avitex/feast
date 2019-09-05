@@ -2,7 +2,7 @@ mod hinting;
 mod input;
 mod token;
 
-use crate::input::{ExpectedHint, Capture, Input, Token, Requirement, TokenTag, Unexpected};
+use crate::input::{Capture, ExpectedHint, Input, Requirement, Token, TokenTag, Unexpected};
 use crate::pass::{Pass, PassInput, PassResult, PassSection};
 
 pub use self::hinting::*;
@@ -106,17 +106,15 @@ where
     C: Capture,
     F: Fn(P) -> PassResult<'i, P, C>,
 {
-    move |pass: P| {
-        match sub(pass) {
-            Ok((out, pass)) => {
-                if out.is_complete() {
-                    Ok((out.into_value(), pass))
-                } else {
-                    Err(pass.with_input_error_incomplete(Requirement::Unknown))
-                }
-            },
-            Err(err) => Err(err),
+    move |pass: P| match sub(pass) {
+        Ok((out, pass)) => {
+            if out.is_complete() {
+                Ok((out.into_value(), pass))
+            } else {
+                Err(pass.with_input_error_incomplete(Requirement::Unknown))
+            }
         }
+        Err(err) => Err(err),
     }
 }
 
