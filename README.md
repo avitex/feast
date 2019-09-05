@@ -5,3 +5,12 @@
 # Feast
 
 **[EXPERIMENTAL] Rust parsing library with a focus on bytes.**
+
+
+| variant  | input  | capture       |
+| -------- | ------ | ------------- |
+| `item`   | loaded | determinate   |
+| `[item]` | loaded | determinate   |
+| `item`   | stream | determinate   |
+| `[item]` | stream | undeterminate |
+|
