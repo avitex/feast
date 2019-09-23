@@ -1,32 +1,34 @@
-use super::{Context, ContextToken};
+use super::{State, StateInputMark, StateInputToken};
 use crate::input;
 
 use std::fmt::Debug;
 
-pub trait Error<'i>: Debug + 'i {
-    type Context: Context<'i>;
-    type InputError: input::Error<'i, Token = ContextToken<'i, Self::Context>>;
+pub trait Error<'i>: Sized + Debug {
+    type State: State<'i>;
+    type InputError: input::Error<
+        Token = StateInputToken<'i, Self::State>,
+        Mark = StateInputMark<'i, Self::State>,
+    >;
 
-    // Create pass error from input error.
-    fn from_input(ctx: &Self::Context, err: Self::InputError) -> Self;
+    fn from_input_error(state: &Self::State, err: Self::InputError) -> Self;
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct VerboseError<'i, C>
+pub struct VerboseError<'i, S>
 where
-    C: Context<'i>,
+    S: State<'i>,
 {
-    input: input::ErrorReason<'i, ContextToken<'i, C>>,
+    input: input::ErrorReason<StateInputToken<'i, S>, StateInputMark<'i, S>>,
 }
 
-impl<'i, C> Error<'i> for VerboseError<'i, C>
+impl<'i, S> Error<'i> for VerboseError<'i, S>
 where
-    C: Context<'i>,
+    S: State<'i>,
 {
-    type Context = C;
-    type InputError = input::ErrorReason<'i, ContextToken<'i, C>>;
+    type State = S;
+    type InputError = input::ErrorReason<StateInputToken<'i, S>, StateInputMark<'i, S>>;
 
-    fn from_input(_ctx: &Self::Context, err: Self::InputError) -> Self {
+    fn from_input_error(_state: &Self::State, err: Self::InputError) -> Self {
         VerboseError { input: err }
     }
 }

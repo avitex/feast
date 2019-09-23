@@ -48,7 +48,7 @@ where
         self.ctx
     }
 
-    fn commit(mut self, rest: PassInput<'i, Self>) -> Self {
+    fn commit_input(mut self, rest: PassInput<'i, Self>) -> Self {
         self.ctx.input = rest;
         self
     }

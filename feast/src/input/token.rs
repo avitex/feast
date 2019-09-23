@@ -1,56 +1,85 @@
-use super::Capture;
+use std::slice;
 use std::fmt::Debug;
 
-pub trait IntoBytes {
+use super::Capture;
+
+/// A `Token` is the smallest unit of input, with a fixed size,
+/// that can be copied without worrying about performance.
+///
+/// For zero-copy guarantees over input this is the largest type
+/// that can and should be re-allocated.
+pub trait Token: Sized + Debug + Copy + Eq + 'static {}
+
+/// A `BytesToken` extends a standard `Token` with the guarantee
+/// that it is a stable, fixed size representation of raw bytes.
+pub trait BytesToken: Token {
+    /// The bytes container for the token.
     type Bytes: AsRef<[u8]>;
 
-    fn into_bytes<'a>(self) -> Self::Bytes;
+    /// The fixed byte size of the token.
+    fn byte_size() -> usize;
+
+    /// Converts the token into raw bytes.
+    fn into_bytes(self) -> Self::Bytes;
 }
 
-pub trait Token: Sized + Capture + Debug + Clone + IntoBytes + Eq {
-    fn byte_size() -> Option<usize>;
-    fn is_ascii(&self) -> bool;
-}
+impl<T> Capture for T
+where
+    T: Token,
+{
+    type Value = T;
 
-impl Token for u8 {
+    /// A `Token` always returns true as it either is produced or
+    /// not produced from input.
     #[inline]
-    fn byte_size() -> Option<usize> {
-        Some(1)
+    fn is_complete(&self) -> bool {
+        true
     }
 
+    /// It's already complete, resolving is a nop.
     #[inline]
-    fn is_ascii(&self) -> bool {
-        return self.is_ascii();
+    fn resolve(&mut self) {
+        ()
+    }
+
+    /// Passes the token through.
+    #[inline]
+    fn into_value(self) -> Self::Value {
+        self
     }
 }
 
-impl_complete_capture!(u8);
+///////////////////////////////////////////////////////////////////////////////
 
-impl IntoBytes for u8 {
+impl Token for u8 {}
+
+impl BytesToken for u8 {
     type Bytes = [u8; 1];
 
+    #[inline]
+    fn byte_size() -> usize {
+        1
+    }
+
+    #[inline]
     fn into_bytes<'a>(self) -> Self::Bytes {
         [self]
     }
 }
 
-impl Token for char {
-    #[inline]
-    fn byte_size() -> Option<usize> {
-        Some(4)
-    }
+///////////////////////////////////////////////////////////////////////////////
 
-    #[inline]
-    fn is_ascii(&self) -> bool {
-        return self.is_ascii();
-    }
-}
+impl Token for char {}
 
-impl_complete_capture!(char);
-
-impl IntoBytes for char {
+impl BytesToken for char {
     type Bytes = [u8; 4];
 
+    #[inline]
+    fn byte_size() -> usize {
+        4
+    }
+
+    #[inline]
     fn into_bytes(self) -> Self::Bytes {
         let mut bytes = [0u8; 4];
         self.encode_utf8(&mut bytes[..]);
@@ -58,6 +87,9 @@ impl IntoBytes for char {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+/// A TokenTag is a container for either a token or a tag.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TokenTag<'a, T: Token> {
     Token(T),
@@ -76,23 +108,72 @@ where
     }
 }
 
-impl<'a, T> IntoBytes for TokenTag<'a, T>
+impl<'a, T> TokenTag<'a, T>
 where
-    T: Token,
+    T: BytesToken,
 {
-    type Bytes = Vec<u8>;
+    /// The total token byte size.
+    pub fn byte_size(&self) -> usize {
+        if let TokenTag::Tag(tag) = self {
+            T::byte_size() * tag.len()
+        } else {
+            T::byte_size()
+        }
+    }
 
-    fn into_bytes(self) -> Self::Bytes {
+    /// Writes the TokenTag value into a byte buffer.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the buffer is not large enough.
+    pub fn copy_into_buf(&self, mut buf: &mut [u8]) {
         match self {
             TokenTag::Tag(tag) => {
-                let token_len = T::byte_size().unwrap_or(1);
-                let mut bytes = Vec::with_capacity(token_len * tag.len());
                 for token in tag.iter() {
-                    bytes.extend_from_slice(token.clone().into_bytes().as_ref())
+                    let buf_slice = &mut buf[0..T::byte_size()];
+                    buf_slice.copy_from_slice(token.clone().into_bytes().as_ref());
+                    buf = &mut buf[T::byte_size()..];
                 }
-                bytes
             }
-            TokenTag::Token(token) => token.into_bytes().as_ref().into(),
+            TokenTag::Token(token) => {
+                let buf_slice = &mut buf[0..T::byte_size()];
+                buf_slice.copy_from_slice(token.into_bytes().as_ref());
+            }
         }
+    }
+
+    /// Converts the TagToken into bytes.
+    pub fn to_bytes_vec(&self) -> Vec<u8> {
+        let len = self.byte_size();
+        let mut buf = Vec::with_capacity(len);
+        unsafe {
+            let buf_slice = slice::from_raw_parts_mut(buf.as_mut_ptr(), len);
+            self.copy_into_buf(buf_slice);
+            buf.set_len(len);
+        }
+        buf
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_char_token_into_bytes() {
+        let token = '?';
+        assert_eq!(token.into_bytes().as_ref(), &[b'?', 0u8, 0u8, 0u8]);
+    }
+
+    #[test]
+    fn test_byte_token_into_bytes() {
+        let token = b'?';
+        assert_eq!(token.into_bytes().as_ref(), &[b'?']);
+    }
+
+    #[test]
+    fn test_token_tag_into_bytes() {
+        let tag = TokenTag::Tag(&['o', 'k']);
+        assert_eq!(tag.to_bytes_vec().as_slice(), &[b'o', 0u8, 0u8, 0u8, b'k', 0u8, 0u8, 0u8]);
     }
 }

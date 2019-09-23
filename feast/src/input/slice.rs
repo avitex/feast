@@ -20,10 +20,11 @@ impl<'i, T> Input<'i> for SliceInput<'i, T>
 where
     T: Token,
 {
+    type Error = ErrorReason<Self::Token, Self::Mark>;
     type Mark = usize;
     type Token = T;
     type Section = Self;
-    type Iterator = SliceIterator<'i, T>;
+    // type Iterator = SliceIterator<'i, T>;
 
     fn is_empty(&self) -> bool {
         self.0.is_empty()
@@ -31,7 +32,7 @@ where
 
     fn split_first<E>(self) -> Result<(Self::Token, Self), E>
     where
-        E: Error<'i, Token = Self::Token>,
+        E: Error<Token = Self::Token, Mark = Self::Mark>,
     {
         self.0
             .split_first()
@@ -41,7 +42,7 @@ where
 
     fn split_at<E>(self, mid: usize) -> Result<(Self::Section, Self), E>
     where
-        E: Error<'i, Token = Self::Token>,
+        E: Error<Token = Self::Token, Mark = Self::Mark>,
     {
         if mid > self.len() {
             Err(E::incomplete(Requirement::Exact(mid - self.len())))
@@ -53,14 +54,14 @@ where
 
     fn split_mark<E>(self, mark: Self::Mark) -> Result<(Self::Section, Self), E>
     where
-        E: Error<'i, Token = Self::Token>,
+        E: Error<Token = Self::Token, Mark = Self::Mark>,
     {
         self.split_at(mark)
     }
 
-    fn iter(&self) -> Self::Iterator {
-        SliceIterator::from(self.0)
-    }
+    // fn iter(&self) -> Self::Iterator {
+    //     SliceIterator::from(self.0)
+    // }
 }
 
 impl<'i, T> ExactSizeInput<'i> for SliceInput<'i, T>
@@ -137,17 +138,6 @@ where
     }
 }
 
-impl<'a, T> InputMarker for SliceIterator<'a, T>
-where
-    T: Token,
-{
-    type Mark = usize;
-
-    fn mark(&self) -> Self::Mark {
-        self.cursor
-    }
-}
-
 // impl<'a, T> InputMarker for SliceIterator<'a, T>
 // where
 //     T: Token,
@@ -207,6 +197,15 @@ where
     }
 }
 
+impl<'a, T> InputIterator<T, usize> for SliceIterator<'a, T>
+where
+    T: Token,
+{
+    fn mark(&self) -> usize {
+        self.cursor
+    }
+}
+
 impl<'i, T> From<&'i [T]> for SliceIterator<'i, T>
 where
     T: Token,
@@ -221,7 +220,8 @@ mod tests {
     use super::*;
 
     type MockToken = u8;
-    type MockError = ErrorReason<'static, MockToken>;
+    type MockMark = usize;
+    type MockError = ErrorReason<MockToken, MockMark>;
 
     const MOCK_DATA: &[u8] = b"hello:world";
 
@@ -268,8 +268,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_slice_input_marker() {
-        assert_eq!(mock_slice_input().iter().next(), Some(b'h'));
-    }
+//     #[test]
+//     fn test_slice_input_marker() {
+//         assert_eq!(mock_slice_input().iter().next(), Some(b'h'));
+//     }
 }

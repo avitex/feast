@@ -1,31 +1,35 @@
-use super::token::{Token, TokenTag};
+use super::mark::{Mark, Span};
+use super::token::Token;
 
 use std::fmt::Debug;
 
-pub trait Error<'a>: Debug + PartialEq {
+pub trait Error: Debug + PartialEq {
+    type Mark: Mark;
     type Token: Token;
 
     /// If the error is fatal, we won't be able to try again.
     fn is_fatal(&self) -> bool;
 
     /// Create a new unexpected error with details.
-    fn unexpected(unexpected: Unexpected<'a, Self::Token>) -> Self;
+    fn unexpected(unexpected: Unexpected<Self::Token, Self::Mark>) -> Self;
 
     /// Create a new incomplete error with a requirement.
     fn incomplete(requirement: Requirement) -> Self;
 }
 
-impl<'a, T> Error<'a> for ErrorReason<'a, T>
+impl<T, M> Error for ErrorReason<T, M>
 where
+    M: Mark,
     T: Token,
 {
+    type Mark = M;
     type Token = T;
 
     fn is_fatal(&self) -> bool {
         self.is_fatal()
     }
 
-    fn unexpected(unexpected: Unexpected<'a, Self::Token>) -> Self {
+    fn unexpected(unexpected: Unexpected<T, M>) -> Self {
         ErrorReason::Unexpected(unexpected)
     }
 
@@ -36,12 +40,12 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum ErrorReason<'a, T: Token> {
+pub enum ErrorReason<T: Token, M: Mark> {
     Incomplete(Requirement),
-    Unexpected(Unexpected<'a, T>),
+    Unexpected(Unexpected<T, M>),
 }
 
-impl<'a, T: Token> ErrorReason<'a, T> {
+impl<T: Token, M: Mark> ErrorReason<T, M> {
     pub fn is_fatal(&self) -> bool {
         match self {
             ErrorReason::Incomplete(_) => false,
@@ -51,18 +55,18 @@ impl<'a, T: Token> ErrorReason<'a, T> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Unexpected<'a, T: Token> {
-    pub unexpected: TokenTag<'a, T>,
-    pub expecting: ExpectedHint<'a, T>,
+pub struct Unexpected<T: Token, M: Mark> {
+    pub unexpected: Span<M>,
+    pub expecting: ExpectedHint<T>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum ExpectedHint<'a, T: Token> {
+pub enum ExpectedHint<T: Token> {
     None,
     Token(T),
-    Tag(&'a [T]),
-    Description(&'a str),
-    OneOf(&'a [ExpectedHint<'a, T>]),
+    Tag(&'static [T]),
+    Description(&'static str),
+    OneOf(&'static [ExpectedHint<T>]),
 }
 
 #[derive(Clone, Debug, PartialEq)]
