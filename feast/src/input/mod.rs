@@ -13,29 +13,21 @@ pub use self::mark::*;
 //pub use self::slice::*;
 pub use self::token::*;
 
-pub trait InputIterator<T: Token, M: Mark>: Iterator<Item = T> {
-    fn mark(&self) -> M;
-}
-
-// impl<I, T> InputIterator<T> for I
-// where
-//     T: Token,
-//     I: InputMarker + Iterator<Item = T>,
-// {
-// }
-
-// Section
-
 pub trait Input<'i>: Sized + Debug {
+    /// The type of error an Input may produce. 
     type Error: Error;
-
+    
+    /// An absolute position in an input.
     type Mark: Mark;
+    
     /// The smallest unit of data the input provides.
     type Token: Token;
+    
     /// A section, or sequence of tokens from the input.
     type Section: ExactSizeInput<'i, Token = Self::Token, Mark = Self::Mark>;
 
-    // type Iterator: InputIterator<Self::Token, Self::Mark>;
+    /// For iterating through input.
+    type TokenIter: Iterator<Item = Self::Token> + InputMarker<Mark = Self::Mark>; 
 
     /// Returns whether or not the input is empty.
     fn is_empty(&self) -> bool;
@@ -50,11 +42,26 @@ pub trait Input<'i>: Sized + Debug {
     where
         E: Error<Token = Self::Token, Mark = Self::Mark>;
 
-    fn split_mark<E>(self, mark: Self::Mark) -> Result<(Self::Section, Self), E>
+   fn split_mark<E>(self, mark: Self::Mark) -> Result<(Self::Section, Self), E>
     where
         E: Error<Token = Self::Token, Mark = Self::Mark>;
 
-    // fn iter(&self) -> Self::Iterator;
+    fn tokens(&self) -> Self::TokenIter;
+}
+
+// impl<I, T> InputIterator<T> for I
+// where
+//     T: Token,
+//     I: InputMarker + Iterator<Item = T>,
+// {
+// }
+
+//pub trait TokenIterator<T: Token, M: Mark>: Iterator<Item = T> + InputMarker<Mark = M> {}
+
+pub trait InputMarker {
+    type Mark: Mark;
+
+    fn mark(&self) -> Self::Mark;
 }
 
 pub trait ExactSizeInput<'i>:

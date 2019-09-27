@@ -24,7 +24,7 @@ where
     type Mark = usize;
     type Token = T;
     type Section = Self;
-    // type Iterator = SliceIterator<'i, T>;
+    type TokenIter = SliceIterator<'i, T>;
 
     fn is_empty(&self) -> bool {
         self.0.is_empty()
@@ -59,9 +59,9 @@ where
         self.split_at(mark)
     }
 
-    // fn iter(&self) -> Self::Iterator {
-    //     SliceIterator::from(self.0)
-    // }
+    fn tokens(&self) -> Self::TokenIter {
+        SliceIterator::from(self.0)
+    }
 }
 
 impl<'i, T> ExactSizeInput<'i> for SliceInput<'i, T>
@@ -197,14 +197,25 @@ where
     }
 }
 
-impl<'a, T> InputIterator<T, usize> for SliceIterator<'a, T>
+impl<'a, T> InputMarker for SliceIterator<'a, T>
 where
     T: Token,
 {
+    type Mark = usize;
+
     fn mark(&self) -> usize {
         self.cursor
     }
 }
+
+//impl<'a, T> InputIterator<T, usize> for SliceIterator<'a, T>
+//where
+//    T: Token,
+//{
+//    fn mark(&self) -> usize {
+//        self.cursor
+//    }
+//}
 
 impl<'i, T> From<&'i [T]> for SliceIterator<'i, T>
 where
