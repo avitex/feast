@@ -9,7 +9,9 @@ pub trait Capture {
     fn is_complete(&self) -> bool;
 
     /// Resolve the the value to be complete.
-    fn resolve(&mut self);
+    fn resolve(&mut self) {
+        ()
+    }
 
     /// Consume the capture to get the value.
     fn into_value(self) -> Self::Value;
@@ -90,10 +92,6 @@ impl<T> Capture for CompleteCapture<T> {
 
     fn is_complete(&self) -> bool {
         true
-    }
-
-    fn resolve(&mut self) {
-        ()
     }
 
     fn into_value(self) -> Self::Value {

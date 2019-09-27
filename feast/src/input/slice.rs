@@ -83,10 +83,6 @@ where
         true
     }
 
-    fn resolve(&mut self) {
-        ()
-    }
-
     fn into_value(self) -> Self::Value {
         self
     }

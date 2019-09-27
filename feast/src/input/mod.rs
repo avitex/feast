@@ -1,7 +1,7 @@
 mod capture;
 mod error;
 mod mark;
-mod slice;
+//mod slice;
 mod token;
 
 use std::fmt::Debug;
@@ -27,7 +27,7 @@ pub trait Input<'i>: Sized + Debug {
     type Section: ExactSizeInput<'i, Token = Self::Token, Mark = Self::Mark>;
 
     /// For iterating through input.
-    type TokenIter: Iterator<Item = Self::Token> + InputMarker<Mark = Self::Mark>; 
+    type Iterator: MarkingIterator<Item = Self::Token, Mark = Self::Mark>; 
 
     /// Returns whether or not the input is empty.
     fn is_empty(&self) -> bool;
@@ -46,29 +46,16 @@ pub trait Input<'i>: Sized + Debug {
     where
         E: Error<Token = Self::Token, Mark = Self::Mark>;
 
-    fn tokens(&self) -> Self::TokenIter;
-}
-
-// impl<I, T> InputIterator<T> for I
-// where
-//     T: Token,
-//     I: InputMarker + Iterator<Item = T>,
-// {
-// }
-
-//pub trait TokenIterator<T: Token, M: Mark>: Iterator<Item = T> + InputMarker<Mark = M> {}
-
-pub trait InputMarker {
-    type Mark: Mark;
-
-    fn mark(&self) -> Self::Mark;
+    fn iter(&self) -> Self::Iterator;
 }
 
 pub trait ExactSizeInput<'i>:
-    Input<'i> + Capture + Index<usize, Output = InputToken<'i, Self>>
+    Input<'i> + Index<usize, Output = InputToken<'i, Self>>
 {
     /// Returns the length of the input.
     fn len(&self) -> usize;
+
+    //fn into_capture() -> CompleteCapture<>
 }
 
 /// Helper to reference an Input's `Token` type.

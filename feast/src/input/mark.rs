@@ -6,6 +6,12 @@ pub trait Mark: Debug + Copy + PartialEq {}
 
 impl Mark for usize {}
 
+pub trait MarkingIterator: Iterator {
+    type Mark: Mark;
+
+    fn mark(&self) -> Self::Mark;
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Span<M: Mark> {
     pub from: M,
